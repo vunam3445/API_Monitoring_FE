@@ -1,5 +1,4 @@
-import React from 'react';
-import Header from '../../components/Layout/Header';
+
 import CurrentPlan from './components/CurrentPlan';
 import PaymentMethod from './components/PaymentMethod';
 import SubscriptionPlans from './components/SubscriptionPlans';

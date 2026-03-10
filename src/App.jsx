@@ -9,11 +9,39 @@ import Logs from './pages/Logs/Logs';
 import Settings from './pages/Settings/Settings';
 import Billing from './pages/Billing/Billing';
 
+import AdminLogin from './pages/admin/pages/AdminLogin/AdminLogin';
+import AdminLayout from './pages/admin/layout/AdminLayout';
+import AdminDashboard from './pages/admin/pages/AdminDashboard/AdminDashboard';
+import AdminApis from './pages/admin/pages/AdminApis/AdminApis';
+import AdminUsers from './pages/admin/pages/AdminUsers/AdminUsers';
+import AdminMonitoring from './pages/admin/pages/AdminMonitoring/AdminMonitoring';
+import AdminAlerts from './pages/admin/pages/AdminAlerts/AdminAlerts';
+import AdminPricingPlans from './pages/admin/pages/AdminPricingPlans/AdminPricingPlans';
+import AdminSubscriptions from './pages/admin/pages/AdminSubscriptions/AdminSubscriptions';
+import AdminRevenueAnalytics from './pages/admin/pages/AdminRevenueAnalytics/AdminRevenueAnalytics';
+import AdminSystemLogs from './pages/admin/pages/AdminSystemLogs/AdminSystemLogs';
+import AdminSettings from './pages/admin/pages/AdminSettings/AdminSettings';
+
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Intro />} />
+
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route element={<AdminLayout />}>
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/apis" element={<AdminApis />} />
+          <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/monitoring" element={<AdminMonitoring />} />
+          <Route path="/admin/alerts" element={<AdminAlerts />} />
+          <Route path="/admin/pricing-plans" element={<AdminPricingPlans />} />
+          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+          <Route path="/admin/revenue-analytics" element={<AdminRevenueAnalytics />} />
+          <Route path="/admin/system-logs" element={<AdminSystemLogs />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+        </Route>
 
         {/* Dashboard Layout wrapper for internal pages */}
         <Route element={<DashboardLayout />}>
