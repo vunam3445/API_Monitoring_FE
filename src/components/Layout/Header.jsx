@@ -1,8 +1,32 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoginModal from '../Auth/LoginModal';
 
 const Header = ({ onOpenSignup }) => {
+    const navigate = useNavigate();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+    const handleLoginClick = () => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+            const userStr = localStorage.getItem('user');
+            if (userStr) {
+                try {
+                    const user = JSON.parse(userStr);
+                    if (user.role === 'ADMIN' || user.role === 'SUPER_ADMIN') {
+                        navigate('/admin/dashboard');
+                        return;
+                    }
+                } catch (e) {
+                    // console.error("Error parsing user data");
+                }
+            }
+            // Nếu có token mà không phải Admin, hoặc parse lỗi, mặc định về dashboard user
+            navigate('/dashboard');
+        } else {
+            setIsLoginModalOpen(true);
+        }
+    };
 
     return (
         <>
@@ -20,7 +44,7 @@ const Header = ({ onOpenSignup }) => {
                     </nav>
                     <div className="flex items-center gap-4">
                         <button
-                            onClick={() => setIsLoginModalOpen(true)}
+                            onClick={handleLoginClick}
                             className="hidden sm:block text-sm font-bold px-4 py-2 text-slate-700 dark:text-slate-300 hover:text-primary transition-colors"
                         >
                             Login

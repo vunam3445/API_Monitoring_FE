@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import DashboardLayout from './components/Layout/DashboardLayout';
 import Dashboard from './pages/Dashboard/Dashboard';
 import APIList from './pages/APIList/APIList';
@@ -21,40 +21,56 @@ import AdminSubscriptions from './pages/admin/pages/AdminSubscriptions/AdminSubs
 import AdminRevenueAnalytics from './pages/admin/pages/AdminRevenueAnalytics/AdminRevenueAnalytics';
 import AdminSystemLogs from './pages/admin/pages/AdminSystemLogs/AdminSystemLogs';
 import AdminSettings from './pages/admin/pages/AdminSettings/AdminSettings';
+import AdminRoute from './components/Auth/AdminRoute';
+
+// Global UI Providers
+import { ToastProvider, ToastContainer } from './components/UI/Toast';
+import { ConfirmDialogProvider } from './components/UI/ConfirmDialog';
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Intro />} />
+    <ToastProvider>
+      <ConfirmDialogProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Intro />} />
 
-        {/* Admin Routes */}
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route element={<AdminLayout />}>
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/apis" element={<AdminApis />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/monitoring" element={<AdminMonitoring />} />
-          <Route path="/admin/alerts" element={<AdminAlerts />} />
-          <Route path="/admin/pricing-plans" element={<AdminPricingPlans />} />
-          <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
-          <Route path="/admin/revenue-analytics" element={<AdminRevenueAnalytics />} />
-          <Route path="/admin/system-logs" element={<AdminSystemLogs />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
-        </Route>
+            {/* Admin Login Route */}
+            <Route path="/admin/login" element={<AdminLogin />} />
 
-        {/* Dashboard Layout wrapper for internal pages */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/apis" element={<APIList />} />
-          <Route path="/monitoring" element={<Monitoring />} />
-          <Route path="/alerts" element={<Alerts />} />
-          <Route path="/logs" element={<Logs />} />
-          <Route path="/billing" element={<Billing />} />
-          <Route path="/settings" element={<Settings />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            {/* Protected Admin Routes */}
+            <Route element={<AdminRoute />}>
+              <Route element={<AdminLayout />}>
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/apis" element={<AdminApis />} />
+                <Route path="/admin/users" element={<AdminUsers />} />
+                <Route path="/admin/monitoring" element={<AdminMonitoring />} />
+                <Route path="/admin/alerts" element={<AdminAlerts />} />
+                <Route path="/admin/pricing-plans" element={<AdminPricingPlans />} />
+                <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+                <Route path="/admin/revenue-analytics" element={<AdminRevenueAnalytics />} />
+                <Route path="/admin/system-logs" element={<AdminSystemLogs />} />
+                <Route path="/admin/settings" element={<AdminSettings />} />
+              </Route>
+            </Route>
+
+            {/* Dashboard Layout wrapper for internal pages */}
+            <Route element={<DashboardLayout />}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/apis" element={<APIList />} />
+              <Route path="/monitoring" element={<Monitoring />} />
+              <Route path="/alerts" element={<Alerts />} />
+              <Route path="/logs" element={<Logs />} />
+              <Route path="/billing" element={<Billing />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+
+        {/* Toast hiển thị trên cùng, ngoài Router */}
+        <ToastContainer />
+      </ConfirmDialogProvider>
+    </ToastProvider>
   )
 }
 
