@@ -16,6 +16,12 @@ export const useLogin = () => {
       
       if (response) {
         const data = response.data || response;
+
+        // Nếu là admin thì báo lỗi không cho dùng giao diện user
+        if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN') {
+            throw new Error('Thông tin đăng nhập không chính xác.');
+        }
+
         if (data.accessToken) {
           localStorage.setItem('accessToken', data.accessToken);
         }
@@ -27,6 +33,7 @@ export const useLogin = () => {
           fullName: data.fullName,
           avatarUrl: data.avatarUrl,
           planType: data.planType,
+          role: data.role,
         };
         localStorage.setItem('user', JSON.stringify(userInfo));
       }
@@ -51,6 +58,12 @@ export const useLogin = () => {
       
       if (response) {
         const data = response.data || response;
+
+        // Nếu là admin thì báo lỗi
+        if (data.role === 'ADMIN' || data.role === 'SUPER_ADMIN') {
+            throw new Error('Thông tin đăng nhập không chính xác.');
+        }
+
         if (data.accessToken) {
           localStorage.setItem('accessToken', data.accessToken);
         }
@@ -62,6 +75,7 @@ export const useLogin = () => {
           fullName: data.fullName,
           avatarUrl: data.avatarUrl,
           planType: data.planType,
+          role: data.role,
         };
         localStorage.setItem('user', JSON.stringify(userInfo));
       }

@@ -13,6 +13,37 @@ export const apiClient = axios.create({
 let isRefreshing = false;
 let failedQueue = [];
 
+const parseJwt = (token) => {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      window.atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+};
+
+const redirectToLogin = () => {
+  const token = localStorage.getItem('accessToken');
+  let isAdmin = false;
+
+  if (token) {
+    const decoded = parseJwt(token);
+    if (decoded && (decoded.role === 'ADMIN' || decoded.role === 'SUPER_ADMIN')) {
+      isAdmin = true;
+    }
+  }
+
+  localStorage.removeItem('accessToken');
+  window.location.href = isAdmin ? '/admin/login' : '/';
+};
+
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -64,8 +95,18 @@ apiClient.interceptors.response.use(
 
     // Handle 401 Unauthorized for token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url.includes('/api/auth/refresh-token') || originalRequest.url.includes('/api/auth/login')) {
-        // If the refresh token itself failed, or login failed, clear data and reject
+      const url = originalRequest.url;
+
+      if (url.includes('api/auth/refresh-token')) {
+        // Refresh token hết hạn → xác định role và chuyển hướng đến trang login phù hợp
+        redirectToLogin();
+        return Promise.reject(new Error(message));
+      }
+
+      // Không tự động redirect khi gặp lỗi 401 ở các trang auth (login, register, v.v.)
+      const authEndpoints = ['api/auth/login', 'api/auth/register', 'api/auth/google'];
+      if (authEndpoints.some(endpoint => url.includes(endpoint))) {
+        // Auth thất bại → chỉ xoá token nếu có, không redirect (để hiển thị lỗi trên form)
         localStorage.removeItem('accessToken');
         return Promise.reject(new Error(message));
       }
@@ -105,7 +146,8 @@ apiClient.interceptors.response.use(
         }
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('accessToken');
+        // Refresh token hết hạn → xác định role và chuyển hướng đến trang login phù hợp
+        redirectToLogin();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
