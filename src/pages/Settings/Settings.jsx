@@ -22,9 +22,9 @@ const Settings = () => {
                 <AlertRulesSection />
                 <MonitoringSection />
                 <APIHealthSection />
-                <SecuritySection />
-                <PreferencesSection />
-                <DangerZoneSection />
+                {/* <SecuritySection /> */}
+                {/* <PreferencesSection /> */}
+                {/* <DangerZoneSection /> */}
             </div>
 
             <div className="max-w-5xl mx-auto flex justify-end gap-3 pb-8">

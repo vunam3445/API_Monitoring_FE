@@ -28,8 +28,8 @@ const AdminSettings = () => {
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-semibold text-sm ${activeTab === tab.id
-                                        ? 'bg-primary text-white shadow-md shadow-primary/20'
-                                        : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-primary/5 hover:text-primary'
+                                    ? 'bg-primary text-white shadow-md shadow-primary/20'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-primary/5 hover:text-primary'
                                     }`}
                             >
                                 <span className={`material-symbols-outlined text-xl ${activeTab === tab.id ? 'text-white' : ''}`}>
