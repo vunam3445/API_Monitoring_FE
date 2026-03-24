@@ -1,19 +1,82 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Danh sách features mặc định có thể chọn
-const AVAILABLE_FEATURES = [
-    { key: 'slack_notifications', label: 'Slack Notifications' },
-    { key: 'webhook_support', label: 'Webhook Support' },
-    { key: 'white_label_reports', label: 'White-label Reports' },
-    { key: 'advanced_analytics', label: 'Advanced Analytics' },
-    { key: 'real_time_alerts', label: 'Real-time Alerts' },
-    { key: 'priority_support', label: 'Priority Support' },
-    { key: 'custom_dashboards', label: 'Custom Dashboards' },
-    { key: 'api_response_validation', label: 'API Response Validation' },
-    { key: 'multi_region_monitoring', label: 'Multi-Region Monitoring' },
-    { key: 'sso_integration', label: 'SSO Integration' },
-];
+const FEATURE_CATEGORIES = {
+    CORE: { label: 'Giới hạn', icon: 'settings_input_component' },
+    NOTIFICATIONS: { label: 'Thông báo & Cảnh báo', icon: 'notifications_active' },
+    ANALYTICS: { label: 'Phân tích & Nhật ký', icon: 'analytics' },
+    SECURITY: { label: 'Xác thực & Bảo mật', icon: 'verified_user' },
+};
 
+const AVAILABLE_FEATURES = [
+    // --- CORE ---
+    {
+        key: '5_api_endpoints',
+        category: 'CORE',
+        label: '5 API Endpoints',
+        description: 'Giới hạn tối đa 5 địa chỉ API được theo dõi đồng thời.'
+    },
+    {
+        key: '50_api_endpoints',
+        category: 'CORE',
+        label: '50 API Endpoints',
+        description: 'Mở rộng khả năng giám sát lên đến 50 API.'
+    },
+    {
+        key: '500_api_endpoints',
+        category: 'CORE',
+        label: 'Unlimited API Endpoints',
+        description: 'Không giới hạn số lượng API theo dõi.'
+    },
+
+
+    // --- NOTIFICATIONS ---
+    {
+        key: 'email_notifications',
+        category: 'NOTIFICATIONS',
+        label: 'Email Notifications',
+        description: 'Gửi thông báo lỗi trực tiếp vào hòm thư cá nhân.'
+    },
+    {
+        key: 'slack_notifications',
+        category: 'NOTIFICATIONS',
+        label: 'Slack & Webhook Support',
+        description: 'Tích hợp thông báo vào Slack hoặc gửi dữ liệu lỗi đến URL tùy chỉnh.'
+    },
+    {
+        key: 'real_time_alerts',
+        category: 'NOTIFICATIONS',
+        label: 'Advanced Alert Rules',
+        description: 'Thiết lập điều kiện báo động thông minh (Timeout, Error Rate).'
+    },
+
+    // --- ANALYTICS ---
+    {
+        key: 'advanced_analytics',
+        category: 'ANALYTICS',
+        label: '24h Performance Charts',
+        description: 'Biểu đồ trực quan hóa dữ liệu hiệu năng trong 24 giờ qua.'
+    },
+    {
+        key: 'log_retention_30d',
+        category: 'ANALYTICS',
+        label: '30-Day Log Retention',
+        description: 'Lưu trữ chi tiết nhật ký mọi lần kiểm tra trong 30 ngày.'
+    },
+    {
+        key: 'export_data',
+        category: 'ANALYTICS',
+        label: 'Export Logs (CSV/JSON)',
+        description: 'Trích xuất dữ liệu nhật ký ra định dạng CSV hoặc JSON.'
+    },
+
+    // --- SECURITY ---
+    {
+        key: 'api_response_validation',
+        category: 'SECURITY',
+        label: 'Deep Response Validation',
+        description: 'Xác thực sâu cấu trúc JSON và kiểu dữ liệu trong phản hồi.'
+    },
+];
 const CURRENCY_OPTIONS = [
     { value: 'USD', label: 'USD ($)', symbol: '$' },
     { value: 'EUR', label: 'EUR (€)', symbol: '€' },
@@ -38,7 +101,7 @@ const getInitialFormData = () => ({
     currency: 'USD',
     maxMonitors: '',
     minInterval: 60,
-    features: {},
+    features: {}, // Đảm bảo là object trống
     isActive: true,
 });
 
@@ -46,13 +109,29 @@ const getInitialFormData = () => ({
  * Parse features từ backend (string JSON) thành object
  * Backend lưu features dạng: '{"api_access": true, "slack_notifications": true}'
  */
-const parseFeaturesFromBackend = (featuresStr) => {
-    if (!featuresStr) return {};
+const parseFeaturesFromBackend = (data) => {
+    if (!data) return {};
+    let parsed = data;
+
+    // Đảm bảo parse hết mức có thể (phòng trường hợp double stringified JSON)
+    // Ví dụ: "{\"api_access\": true}" -> {api_access: true}
     try {
-        return typeof featuresStr === 'string' ? JSON.parse(featuresStr) : featuresStr;
+        while (typeof parsed === 'string') {
+            const next = JSON.parse(parsed);
+            if (next === parsed) break;
+            parsed = next;
+        }
     } catch {
-        return {};
+        // Nếu không parse được nữa thì giữ nguyên giá trị hiện tại
     }
+
+    // Nếu là dạng mảng ["f1", "f2"] -> chuyển thành {f1: true, f2: true}
+    if (Array.isArray(parsed)) {
+        return parsed.reduce((acc, key) => ({ ...acc, [key]: true }), {});
+    }
+
+    // Luôn trả về một object
+    return (parsed && typeof parsed === 'object') ? parsed : {};
 };
 
 /**
@@ -149,13 +228,16 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
     };
 
     const handleFeatureToggle = (featureKey) => {
-        setFormData((prev) => ({
-            ...prev,
-            features: {
-                ...prev.features,
-                [featureKey]: !prev.features[featureKey],
-            },
-        }));
+        setFormData((prev) => {
+            const currentFeatures = prev.features && typeof prev.features === 'object' ? { ...prev.features } : {};
+            return {
+                ...prev,
+                features: {
+                    ...currentFeatures,
+                    [featureKey]: !currentFeatures[featureKey],
+                },
+            };
+        });
     };
 
     const handleNext = () => {
@@ -305,68 +387,105 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
         </div>
     );
 
-    const renderStep1 = () => (
-        <div className="space-y-5 animate-fadeIn">
-            <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 tracking-wider">
-                    Số lượng Monitors tối đa <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">dns</span>
-                    <input
-                        type="number"
-                        name="maxMonitors"
-                        value={formData.maxMonitors}
-                        onChange={handleChange}
-                        min="1"
-                        className={`block w-full rounded-xl border ${errors.maxMonitors ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-200' : 'border-slate-300 dark:border-slate-700 focus:border-primary focus:ring-primary/20'} bg-white dark:bg-slate-800 py-2.5 pl-11 pr-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 transition-all text-sm`}
-                        placeholder="e.g. 50"
-                    />
+    const renderStep1 = () => {
+        // Hàm render cho từng nhóm tính năng - Tận dụng lại logic để giảm lỗi
+        const renderFeatureGroup = (catKey) => {
+            const catInfo = FEATURE_CATEGORIES[catKey];
+            const catFeatures = AVAILABLE_FEATURES.filter((f) => f.category === catKey);
+            if (catFeatures.length === 0) return null;
+
+            return (
+                <div key={catKey} className="space-y-3">
+                    <div className="flex items-center gap-2 px-1 border-b border-slate-100 dark:border-slate-800 pb-2">
+                        <span className="material-symbols-outlined text-slate-400 text-sm">{catInfo.icon}</span>
+                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{catInfo.label}</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {catFeatures.map((feature) => {
+                            const isChecked = !!(formData.features && formData.features[feature.key]);
+                            return (
+                                <button
+                                    key={feature.key}
+                                    type="button"
+                                    onClick={() => handleFeatureToggle(feature.key)}
+                                    className={`flex items-start gap-3 p-3 rounded-xl transition-all border text-left ${isChecked
+                                        ? 'bg-primary/5 border-primary/30 dark:bg-primary/10 ring-1 ring-primary/20'
+                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                        }`}
+                                >
+                                    <div className="mt-0.5 shrink-0">
+                                        <span className={`material-symbols-outlined text-lg transition-colors ${isChecked ? 'text-primary' : 'text-slate-300'}`}>
+                                            {isChecked ? 'check_circle' : 'radio_button_unchecked'}
+                                        </span>
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className={`text-sm font-bold truncate ${isChecked ? 'text-primary' : 'text-slate-700 dark:text-slate-200'}`}>
+                                            {feature.label}
+                                        </p>
+                                        <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                                            {feature.description}
+                                        </p>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
-                {errors.maxMonitors && (
-                    <p className="mt-1.5 text-xs text-rose-500 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-xs">error</span>{errors.maxMonitors}
-                    </p>
-                )}
+            );
+        };
+
+        return (
+            <div className="space-y-6 animate-fadeIn pb-4">
+                {/* Section Giới hạn */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* <div>
+                        <label className="block text-[11px] font-black uppercase text-slate-400 mb-2 tracking-widest">Giới hạn Monitors</label>
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-primary transition-colors">dns</span>
+                            <input
+                                type="number"
+                                name="maxMonitors"
+                                value={formData.maxMonitors}
+                                onChange={handleChange}
+                                min="1"
+                                className={`block w-full rounded-xl border ${errors.maxMonitors ? 'border-rose-400 focus:ring-rose-200' : 'border-slate-200 dark:border-slate-700 focus:border-primary focus:ring-primary/20'} bg-white dark:bg-slate-800 py-2.5 pl-11 pr-4 text-slate-900 dark:text-white focus:outline-none focus:ring-2 transition-all text-sm`}
+                                placeholder="e.g. 50"
+                            />
+                        </div>
+                        {errors.maxMonitors && <p className="mt-1 text-xs text-rose-500">{errors.maxMonitors}</p>}
+                    </div> */}
+                    <div>
+                        <label className="block text-[11px] font-black uppercase text-slate-400 mb-2 tracking-widest">Tần suất tối thiểu</label>
+                        <div className="relative group">
+                            <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-primary transition-colors">timer</span>
+                            <select
+                                name="minInterval"
+                                value={formData.minInterval}
+                                onChange={handleChange}
+                                className="block w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 pl-11 pr-4 text-slate-900 dark:text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm appearance-none"
+                            >
+                                {INTERVAL_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Danh sách Features */}
+                <div className="space-y-8">
+                    <div className="flex items-center justify-between">
+                        <label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Tính năng đi kèm</label>
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">{selectedFeaturesCount} Key được cấp</span>
+                    </div>
+
+                    {/* Render từng nhóm theo thứ tự ưu tiên */}
+                    {renderFeatureGroup('CORE')}
+                    {renderFeatureGroup('NOTIFICATIONS')}
+                    {renderFeatureGroup('ANALYTICS')}
+                    {renderFeatureGroup('SECURITY')}
+                </div>
             </div>
-            <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 tracking-wider">Khoảng thời gian kiểm tra tối thiểu</label>
-                <div className="relative">
-                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg">timer</span>
-                    <select
-                        name="minInterval"
-                        value={formData.minInterval}
-                        onChange={handleChange}
-                        className="block w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 py-2.5 pl-11 pr-4 text-slate-900 dark:text-white focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all text-sm cursor-pointer appearance-none"
-                    >
-                        {INTERVAL_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
-                    </select>
-                </div>
-            </div>
-            <div>
-                <div className="flex items-center justify-between mb-3">
-                    <label className="text-xs font-bold uppercase text-slate-500 dark:text-slate-400 tracking-wider">Tính năng</label>
-                    <span className="text-xs font-semibold text-primary bg-primary/10 px-2 py-0.5 rounded-lg">{selectedFeaturesCount} đã chọn</span>
-                </div>
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
-                    {AVAILABLE_FEATURES.map((feature) => (
-                        <label
-                            key={feature.key}
-                            className={`flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all border ${formData.features[feature.key] ? 'bg-primary/5 border-primary/30 dark:bg-primary/10' : 'bg-slate-50 dark:bg-slate-800/50 border-transparent hover:bg-slate-100 dark:hover:bg-slate-800'}`}
-                        >
-                            <div className="flex items-center gap-3">
-                                <span className={`material-symbols-outlined text-lg transition-colors ${formData.features[feature.key] ? 'text-primary' : 'text-slate-400'}`}>
-                                    {formData.features[feature.key] ? 'check_circle' : 'radio_button_unchecked'}
-                                </span>
-                                <span className="text-sm font-medium text-slate-900 dark:text-white">{feature.label}</span>
-                            </div>
-                            <input type="checkbox" checked={!!formData.features[feature.key]} onChange={() => handleFeatureToggle(feature.key)} className="sr-only" />
-                        </label>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
+        );
+    };
 
     const renderStep2 = () => {
         const selectedFeatures = AVAILABLE_FEATURES.filter((f) => formData.features[f.key]);
