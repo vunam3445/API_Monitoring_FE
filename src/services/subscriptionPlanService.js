@@ -56,4 +56,12 @@ export const subscriptionPlanService = {
     delete: async (id) => {
         return apiClient.delete(`${BASE_URL}/${id}`);
     },
+    /**
+     * Lấy plan cụ thể của user
+     * @param {string} userId - UUID của user
+     * @returns {Promise} SubscriptionPlan object
+     */
+    getByUser: async (userId) => {
+        return apiClient.get(`${BASE_URL}/user/${userId}`);
+    },
 };
