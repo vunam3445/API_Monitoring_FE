@@ -56,6 +56,9 @@ export const useApiMonitors = () => {
             } else if (currentFilter === 'Healthy') {
                 lastStatus = 'Healthy';
                 isActive = true; // Typically a healthy API must be active
+            } else if (currentFilter === 'Warning') {
+                lastStatus = 'Warning';
+                isActive = true;
             } else if (currentFilter === 'Down') {
                 lastStatus = 'Down';
                 isActive = true; // Typically a down API must be active

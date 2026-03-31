@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MonitoringHeader = () => {
+const MonitoringHeader = ({ onOpenSelector, selectedApiName }) => {
     return (
         <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div>
@@ -17,9 +17,14 @@ const MonitoringHeader = () => {
                     <span className="material-symbols-outlined text-sm">refresh</span>
                     Refresh
                 </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95">
-                    <span className="material-symbols-outlined text-sm">api</span>
-                    API Selector
+                <button 
+                    onClick={onOpenSelector}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 transition-all active:scale-95 min-w-[160px] justify-between"
+                >
+                    <div className="flex items-center gap-2">
+                        <span className="material-symbols-outlined text-sm">api</span>
+                        <span className="truncate max-w-[150px]">{selectedApiName || 'Select API'}</span>
+                    </div>
                     <span className="material-symbols-outlined text-sm leading-none ml-1">expand_more</span>
                 </button>
             </div>

@@ -62,6 +62,7 @@ function App() {
               <Route path="/alerts" element={<Alerts />} />
               <Route path="/logs" element={<Logs />} />
               <Route path="/billing" element={<Billing />} />
+              <Route path="/payment/vnpay-return" element={<Billing />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Routes>

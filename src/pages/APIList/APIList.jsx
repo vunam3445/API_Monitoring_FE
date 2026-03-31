@@ -106,7 +106,7 @@ const APIList = () => {
                 onToggleActive={toggleActive}
             />
 
-            <FooterStats count={pagination.totalElements || apis.length} />
+            {/* <FooterStats count={pagination.totalElements || apis.length} /> */}
 
             {/* Forms Layer */}
             <AddAPIModal

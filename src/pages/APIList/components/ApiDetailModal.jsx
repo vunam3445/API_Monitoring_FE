@@ -17,6 +17,7 @@ const ApiDetailModal = ({ isOpen, onClose, apiData }) => {
         if (item.lastStatus === null || item.lastStatus === undefined) return 'unknown';
         const statusString = String(item.lastStatus).toLowerCase();
         if (statusString === 'true' || statusString === 'up' || statusString === 'healthy') return 'healthy';
+        if (statusString === 'warning') return 'warning';
         if (statusString === 'false' || statusString === 'down' || statusString === 'error') return 'down';
         return 'unknown';
     };
@@ -24,6 +25,7 @@ const ApiDetailModal = ({ isOpen, onClose, apiData }) => {
     const getStatusStyle = (status) => {
         switch (status) {
             case 'healthy': return 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+            case 'warning': return 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800';
             case 'down': return 'bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800 animate-pulse';
             case 'paused': return 'bg-slate-200 text-slate-500 dark:bg-slate-700/50 dark:text-slate-400 border-slate-300 dark:border-slate-600';
             default: return 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 border-slate-200 dark:border-slate-700';

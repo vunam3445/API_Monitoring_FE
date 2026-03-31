@@ -26,6 +26,7 @@ const APITable = ({ apis = [], loading = false, pagination = {}, sortConfig = {}
 
         const statusString = String(item.lastStatus).toLowerCase();
         if (statusString === 'true' || statusString === 'up' || statusString === 'healthy') return 'healthy';
+        if (statusString === 'warning') return 'warning';
         if (statusString === 'false' || statusString === 'down' || statusString === 'error') return 'down';
 
         return 'unknown';

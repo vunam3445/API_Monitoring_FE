@@ -1,6 +1,6 @@
 import React from 'react';
 
-const SubscriptionPlans = ({ plans = [], loading, currentPlanId }) => {
+const SubscriptionPlans = ({ plans = [], loading, currentPlanId, onChoosePlan }) => {
     if (loading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
@@ -91,6 +91,7 @@ const SubscriptionPlans = ({ plans = [], loading, currentPlanId }) => {
                             </div>
 
                             <button 
+                                onClick={() => !isCurrent && onChoosePlan && onChoosePlan(plan)}
                                 disabled={isCurrent}
                                 className={`w-full py-3.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                     isCurrent 
