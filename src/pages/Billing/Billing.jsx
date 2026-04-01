@@ -13,6 +13,7 @@ const Billing = () => {
     const { addToast } = useToast();
     const location = useLocation();
     const navigate = useNavigate();
+    const [refreshTrigger, setRefreshTrigger] = React.useState(0);
     const hasProcessedRef = useRef(false);
 
     // Handle VNPay Callback inside Billing page for seamless UX
@@ -25,14 +26,17 @@ const Billing = () => {
             // Check if URL contains VNPay return parameters and avoid duplicate processing
             if ((vnpResponseCode || vnpTransactionStatus) && !hasProcessedRef.current) {
                 hasProcessedRef.current = true; // Block duplicate calls immediately
-                
+
                 try {
                     const response = await paymentService.handleVNPayReturn(location.search);
-                    
+
                     if (response.success) {
                         addToast('success', 'Gói dịch vụ của bạn đã được cập nhật thành công!');
-                        // Refresh data to show new plan
+                        // Refresh data to show new plan and history
                         refresh();
+                        setTimeout(() => {
+                            setRefreshTrigger(prev => prev + 1);
+                        }, 1000);
                     } else {
                         addToast('error', response.message || 'Thanh toán thất bại hoặc đã bị hủy.');
                     }
@@ -50,6 +54,20 @@ const Billing = () => {
 
     const handleChoosePlan = async (plan) => {
         try {
+            // Check if it's a FREE plan (price = 0)
+            if (plan.price === 0) {
+                const response = await paymentService.subscribeFree(plan.id);
+                if (response.success) {
+                    addToast('success', `Đã chuyển sang gói ${plan.name} thành công!`);
+                    refresh();
+                    setRefreshTrigger(prev => prev + 1);
+                } else {
+                    addToast('error', response.message || 'Đã xảy ra lỗi khi đăng ký gói miễn phí.');
+                }
+                return;
+            }
+
+            // Otherwise, it's a PAID plan -> Proceed to VNPay
             const response = await paymentService.createPaymentUrl(plan.id);
             if (response && response.paymentUrl) {
                 // Redirect user to VNPay
@@ -86,7 +104,7 @@ const Billing = () => {
 
                     {/* Billing History Section */}
                     <div className="pt-4">
-                        <BillingHistory />
+                        <BillingHistory refreshTrigger={refreshTrigger} />
                     </div>
                 </div>
             </div>

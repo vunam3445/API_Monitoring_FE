@@ -24,5 +24,14 @@ export const paymentService = {
    */
   handleVNPayReturn: async (queryString) => {
     return await apiClient.get(`/api/payment/vnpay-return${queryString}`);
+  },
+
+  /**
+   * Subscribe to a free plan directly without payment gateway
+   * @param {string} planId - UUID of the plan
+   * @returns {Promise<{success: boolean, message: string}>}
+   */
+  subscribeFree: async (planId) => {
+    return await apiClient.post('/api/subscriptions/free-subscribe', { planId });
   }
 };
