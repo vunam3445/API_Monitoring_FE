@@ -2,57 +2,62 @@ import React, { useState } from 'react';
 import MonitoringHeader from './components/MonitoringHeader';
 import MonitorTable from './components/MonitorTable';
 import MonitorDetail from './components/MonitorDetail';
+import useMonitoring from './hooks/useMonitoring';
 
 const Monitoring = () => {
+    const { summary, keyHealth, events, loading, error, toggleStatus, refresh } = useMonitoring(8); // Limit last 8 events
     const [selectedMonitor, setSelectedMonitor] = useState(null);
-    const [isAddingMonitor, setIsAddingMonitor] = useState(false);
 
     const handleBackToList = () => {
         setSelectedMonitor(null);
+        refresh(); // Refresh overall data when returning to list
+    };
+
+    const handleToggleMonitor = async (id) => {
+        try {
+            await toggleStatus(id);
+            // Re-fetch overall data to reflect the toggle in the list
+            refresh();
+        } catch (err) {
+            console.error('Failed to toggle monitor status', err);
+        }
     };
 
     return (
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto custom-scrollbar bg-slate-50/50 dark:bg-slate-950/20">
             <div className="p-8 space-y-10 max-w-7xl mx-auto w-full">
                 {selectedMonitor ? (
-                    /* Detail View */
+                    /* Detail View - Now receiving real data */
                     <MonitorDetail 
-                        monitor={selectedMonitor} 
+                        monitorId={selectedMonitor.id} 
                         onBack={handleBackToList} 
+                        onToggleStatus={() => refresh()}
                     />
                 ) : (
-                    /* List View */
+                    /* List View - Connecting real data */
                     <>
-                        <MonitoringHeader onAddMonitor={() => setIsAddingMonitor(true)} />
+                        <MonitoringHeader 
+                            summary={summary}
+                        />
                         
                         <div className="space-y-10">
-                            <MonitorTable onSelectMonitor={setSelectedMonitor} />
+                            {error && (
+                                <div className="p-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-200 dark:border-rose-800 rounded-2xl flex items-center gap-3 text-rose-600 dark:text-rose-400">
+                                   <span className="material-symbols-outlined">error</span>
+                                   <p className="text-sm font-bold">{error}</p>
+                                </div>
+                            )}
+                            
+                            <MonitorTable 
+                                monitors={keyHealth} 
+                                loading={loading}
+                                onSelectMonitor={setSelectedMonitor} 
+                                onToggleStatus={handleToggleMonitor}
+                            />
                         </div>
                     </>
                 )}
             </div>
-            
-            {/* New Monitor Modal would go here */}
-            {isAddingMonitor && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-8 transform animate-in slide-in-from-bottom-8 duration-500">
-                        <div className="flex justify-between items-center mb-8">
-                            <h3 className="text-2xl font-black text-slate-900 dark:text-white">Create New Monitor</h3>
-                            <button onClick={() => setIsAddingMonitor(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                                <span className="material-symbols-outlined">close</span>
-                            </button>
-                        </div>
-                        {/* Simplified Form Placeholder */}
-                        <div className="space-y-6">
-                            <p className="text-sm text-slate-500">Form to add monitor details (URL, Method, Interval, etc.) would be here.</p>
-                            <div className="flex justify-end gap-4 mt-10">
-                                <button onClick={() => setIsAddingMonitor(false)} className="px-6 py-2.5 text-sm font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">Cancel</button>
-                                <button className="px-8 py-2.5 bg-primary text-white text-sm font-black uppercase tracking-widest rounded-xl shadow-lg shadow-primary/20 hover:opacity-90 active:scale-95 transition-all">Create Monitor</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

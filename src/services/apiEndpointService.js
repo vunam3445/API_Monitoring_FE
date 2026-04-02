@@ -50,6 +50,14 @@ export const apiEndpointService = {
   },
 
   /**
+   * Get single monitor detail configuration
+   * @param {string} id - Monitor UUID
+   */
+  getMonitorDetail: async (id) => {
+    return apiClient.get(`/api/Apis/${id}`);
+  },
+
+  /**
    * Get all uptime logs for a specific user with filtering/sorting
    * @param {string} userId - User UUID
    * @param {object} params - { search, statusCode, method, sort, page, size }
