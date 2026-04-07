@@ -4,7 +4,7 @@ import { GoogleLogin } from '@react-oauth/google';
 import { useLogin } from '../../hooks/useLogin';
 import Notification from '../UI/Notification';
 
-const LoginModal = ({ isOpen, onClose, onSwitchToSignup, initialEmail = '' }) => {
+const LoginModal = ({ isOpen, onClose, onSwitchToSignup, onSwitchToForgotPassword, initialEmail = '' }) => {
     const navigate = useNavigate();
     const { login, loginWithGoogle, isLoading } = useLogin();
     const [email, setEmail] = useState('');
@@ -154,7 +154,13 @@ const LoginModal = ({ isOpen, onClose, onSwitchToSignup, initialEmail = '' }) =>
                                 <input type="checkbox" className="rounded border-slate-300 text-primary focus:ring-primary" />
                                 <span className="text-slate-600 dark:text-slate-400">Remember me</span>
                             </label>
-                            <a href="#" className="font-medium text-primary hover:text-primary/80">Forgot password?</a>
+                            <button 
+                                type="button" 
+                                onClick={onSwitchToForgotPassword} 
+                                className="font-medium text-primary hover:text-primary/80"
+                            >
+                                Forgot password?
+                            </button>
                         </div>
 
                         <button

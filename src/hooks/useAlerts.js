@@ -18,6 +18,10 @@ export const useAlerts = (initialPageSize = 10) => {
     const [summaryLoading, setSummaryLoading] = useState(true);
     const [error, setError] = useState(null);
     
+    // Alert Detail state
+    const [selectedAlert, setSelectedAlert] = useState(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+    
     // Pagination & Filtering state
     const [filters, setFilters] = useState({
         search: '',
@@ -201,6 +205,32 @@ export const useAlerts = (initialPageSize = 10) => {
     }, []);
 
     /**
+     * Lấy chi tiết một sự cố theo ID
+     */
+    const getDetail = useCallback(async (id) => {
+        setDetailLoading(true);
+        try {
+            const response = await alertService.getAlertDetail(id);
+            const data = response?.data || response;
+            setSelectedAlert(data);
+            return data;
+        } catch (err) {
+            toast.error('Không thể tải chi tiết sự cố: ' + (err.message || 'Unknown error'));
+            return null;
+        } finally {
+            setDetailLoading(false);
+        }
+    }, [toast]);
+
+    /**
+     * Đóng Modal chi tiết
+     */
+    const closeDetail = useCallback(() => {
+        setSelectedAlert(null);
+    }, []);
+
+
+    /**
      * Thay đổi trang
      */
     const handlePageChange = useCallback((newPage) => {
@@ -224,6 +254,10 @@ export const useAlerts = (initialPageSize = 10) => {
         exportData,
         handleFilterChange,
         handlePageChange,
+        getDetail,
+        closeDetail,
+        selectedAlert,
+        detailLoading,
         refresh: () => { fetchAlerts(pagination.page); fetchSummary(); }
     };
 };
