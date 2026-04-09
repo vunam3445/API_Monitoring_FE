@@ -1,158 +1,296 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAdminUsers } from './hooks/useAdminUsers';
 
 const AdminUsers = () => {
+    const {
+        users,
+        loading,
+        stats,
+        loadingStats,
+        pagination,
+        filters,
+        handleBlockUser,
+        handleActiveUser,
+        handlePageChange,
+        handleFilterChange,
+        refresh
+    } = useAdminUsers();
+
     const [selectedUser, setSelectedUser] = useState(null);
 
-    const users = [
-        {
-            id: '#USR-8921', name: 'Sarah Jenkins', email: 'sarah.j@acmetech.com',
-            company: 'AcmeTech Inc.', plan: 'PRO', planClass: 'bg-orange-50 dark:bg-primary/10 text-primary',
-            apisUsed: 24, status: 'Active', statusColor: 'bg-green-500', statusText: 'text-green-600',
-            lastLogin: '2 hours ago', created: 'Oct 12, 2023',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD-1jQ7oeXAwibENorxGgiP2IacYjhED7x1ZKRdopFUYlo_cTor18b92Gm3OHtffUeEQY4dY4xAwTTSMBiGs8nidnnTSBikTJ-P-vYd_dv1mHMq0HQjpIj6nHuBGBYYF5f1s6FVjmE8ntMMpA947bxHSxFCzdJqOmSAx0wiBq0Uh6RZdgOZY68kBjzJUscLSiDlAQrt3rIzf8GOBk40pixLlHDtEp9fI3ieppKWf7K_WhNV9AqSKe1NVC9J-P7Ml4JmEdBAMTH0ym5f'
-        },
-        {
-            id: '#USR-7734', name: 'Marcus Thorne', email: 'm.thorne@gloden.io',
-            company: 'Gloden.io', plan: 'FREE', planClass: 'bg-slate-100 dark:bg-slate-800 text-slate-500',
-            apisUsed: 8, status: 'Active', statusColor: 'bg-green-500', statusText: 'text-green-600',
-            lastLogin: 'Yesterday', created: 'Jan 05, 2024',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuB5GOTtQKqe1Ry5m32ruh_W5lx39_KiO1lfN-bpa_eAeBrhJ9u-zRgEEs333b_znLx8Z4n9a3jNzX602AFXOrDXfwBFQw9fEjEe-sjhFAInUfKE76_R3w66MelrUuCDEZor52XvMXGanHkNkFxpMAfMkyqbbgsttgJENJVveCZxf2_xxlCxIR0XWCpHcC-eA7oMfRGyXa1crdwbllydOUPH4JdPswy039op6RCslRLS7pd1FIFhXcPtH7Jv4Gh-b5pMADgyCL7jAm4X'
-        },
-        {
-            id: '#USR-4410', name: 'Liam Peterson', email: 'liam@startup.co',
-            company: 'Startup Co.', plan: 'ENTERPRISE', planClass: 'bg-slate-900 dark:bg-slate-700 text-white',
-            apisUsed: 156, status: 'Suspended', statusColor: 'bg-red-500', statusText: 'text-red-600',
-            lastLogin: '12 days ago', created: 'Aug 22, 2023',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC1XYi5C8A-87wKunnxrvBi8tofUHthrKTnSnKPm37LRvbAZ6HgQvJdMnAS9aYKgc54hcs8BytI3Wgg4-hd5FrW1ipKb6I7fsZuuMV96IFZDVHOAs3PXVE4Vx12FqEXM3vpv08dUjy0ABeAvbkrt53VNJrhqevV9pweW-C7S1CQf90oZU8ehjsFS67AxkR89AwbHX1RpJcTU-BqH5qHM4iybdvPOnFXpuFiVbKc3Clf4l2nw8sI7pU2d9rmKIphAuROp_TfEkxRlLDm'
-        },
-        {
-            id: '#USR-3199', name: 'Elena Rodriguez', email: 'elena.r@finops.com',
-            company: 'FinOps Systems', plan: 'PRO', planClass: 'bg-orange-50 dark:bg-primary/10 text-primary',
-            apisUsed: 42, status: 'Active', statusColor: 'bg-green-500', statusText: 'text-green-600',
-            lastLogin: 'Just now', created: 'May 30, 2023',
-            avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuChM4CusgXxbsKO7grDGuLd7v2EnAfUuXgoxjpBA1SiQCPVt4nr1OEJKJGSzqyy_avrzSq1Nx8AX_tIGhxtLMbeq9tUy3z8BvCb937yXRSrkPc0LGso4KPXGUsG3XwiDE_iN1OrGih6HZfFv_7_WEPoyFNhvhd9KLCy7ht2ZCloZd505bmPLWTUM5D978sk2r_FLIwNE_pdg39is0_BaeIizpRFFiSSlO8rRExXgy2Z2nQyBZ7Jcv7vOqzyenk_1FE71vHJuGcM8_tf'
+    // Local filter state for inputs
+    const [localFilters, setLocalFilters] = useState({
+        fullName: '',
+        email: '',
+        planType: '',
+        status: '',
+        role: ''
+    });
+
+    // Update local filters when global filters change (e.g. on reset)
+    useEffect(() => {
+        setLocalFilters({
+            fullName: filters.fullName || '',
+            email: filters.email || '',
+            planType: filters.planType || '',
+            status: filters.status || '',
+            role: filters.role || ''
+        });
+    }, [filters]);
+
+    const handleApplyFilters = () => {
+        handleFilterChange(localFilters);
+    };
+
+    const handleResetFilters = () => {
+        const reseted = {
+            fullName: '',
+            email: '',
+            planType: '',
+            status: '',
+            role: ''
+        };
+        setLocalFilters(reseted);
+        handleFilterChange(reseted);
+    };
+
+    const [activeMenuId, setActiveMenuId] = useState(null);
+
+    // Close menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (activeMenuId && !event.target.closest('.user-action-menu')) {
+                setActiveMenuId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [activeMenuId]);
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'ACTIVE':
+                return {
+                    bg: 'bg-green-500',
+                    text: 'text-green-600',
+                    lightBg: 'bg-green-50'
+                };
+            case 'SUSPENDED':
+                return {
+                    bg: 'bg-red-500',
+                    text: 'text-red-600',
+                    lightBg: 'bg-red-50'
+                };
+            case 'PENDING':
+                return {
+                    bg: 'bg-orange-500',
+                    text: 'text-orange-600',
+                    lightBg: 'bg-orange-50'
+                };
+            default:
+                return {
+                    bg: 'bg-slate-500',
+                    text: 'text-slate-600',
+                    lightBg: 'bg-slate-50'
+                };
         }
-    ];
+    };
+
+    const getPlanBadge = (planType) => {
+        switch (planType) {
+            case 'PRO':
+                return 'bg-orange-50 dark:bg-primary/10 text-primary';
+            case 'ENTERPRISE':
+                return 'bg-slate-900 dark:bg-slate-700 text-white';
+            case 'FREE':
+            default:
+                return 'bg-slate-100 dark:bg-slate-800 text-slate-500';
+        }
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return '--';
+        try {
+            return new Date(dateString).toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+            });
+        } catch (e) {
+            return dateString;
+        }
+    };
 
     return (
         <div className="p-8 space-y-8 max-w-[1400px] mx-auto w-full relative">
             {/* Page Heading */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 relative z-10">
                 <div>
-                    <h2 className="text-3xl font-extrabold tracking-tight">User Management</h2>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Manage all users, subscriptions, and
-                        API usage across the platform.</p>
+                    <h2 className="text-3xl font-extrabold tracking-tight">Quản lý người dùng</h2>
+                    <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">
+                        Quản lý tất cả người dùng, gói đăng ký và quyền hạn trên hệ thống.
+                    </p>
                 </div>
                 <div className="flex items-center gap-3">
                     <button
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
-                        <span className="material-symbols-outlined text-[18px]">file_download</span>
-                        Export Users
+                        onClick={refresh}
+                        disabled={loading}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all disabled:opacity-50">
+                        <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
+                        Làm mới
                     </button>
                     <button
                         className="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
                         <span className="material-symbols-outlined text-[18px]">person_add</span>
-                        Add New User
+                        Thêm người dùng
                     </button>
                 </div>
             </div>
 
             {/* Summary Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 relative z-10">
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Total Users</span>
-                        <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[18px]">groups</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 relative z-10">
+                {/* Main Stats */}
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 -mr-8 -mt-8 rounded-full transition-transform group-hover:scale-150"></div>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Tổng người dùng</span>
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 flex items-center justify-center shadow-sm">
+                            <span className="material-symbols-outlined text-[20px]">groups</span>
                         </div>
                     </div>
-                    <div className="text-2xl font-black">1,248</div>
-                    <div className="text-[11px] text-green-500 mt-1 font-bold flex items-center gap-0.5">
-                        <span className="material-symbols-outlined text-[12px]">trending_up</span> +12% this month
-                    </div>
+                    {loadingStats ? (
+                        <div className="h-8 w-20 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
+                    ) : (
+                        <div className="text-3xl font-black text-slate-900 dark:text-white">{stats?.totalUser || 0}</div>
+                    )}
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Active Users</span>
-                        <div className="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/20 text-green-600 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
+
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 -mr-8 -mt-8 rounded-full transition-transform group-hover:scale-150"></div>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Hoạt động</span>
+                        <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 flex items-center justify-center shadow-sm">
+                            <span className="material-symbols-outlined text-[20px]">how_to_reg</span>
                         </div>
                     </div>
-                    <div className="text-2xl font-black">1,102</div>
-                    <div className="text-[11px] text-slate-400 mt-1 font-bold">88% of total base</div>
+                    {loadingStats ? (
+                        <div className="h-8 w-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
+                    ) : (
+                        <div className="text-3xl font-black text-emerald-600">{stats?.totalActiveUser || 0}</div>
+                    )}
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Free Plan</span>
-                        <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-500 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[18px]">person</span>
+
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative group">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-rose-500/5 -mr-8 -mt-8 rounded-full transition-transform group-hover:scale-150"></div>
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Đã chặn</span>
+                        <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-900/20 text-rose-600 flex items-center justify-center shadow-sm">
+                            <span className="material-symbols-outlined text-[20px]">block</span>
                         </div>
                     </div>
-                    <div className="text-2xl font-black">840</div>
-                    <div className="text-[11px] text-slate-400 mt-1 font-bold">Self-serve users</div>
+                    {loadingStats ? (
+                        <div className="h-8 w-12 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
+                    ) : (
+                        <div className="text-3xl font-black text-rose-600">{stats?.totalBlockUser || 0}</div>
+                    )}
                 </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Pro Plan</span>
-                        <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
+
+                {/* Plan Stats */}
+                {stats?.planStatistics?.map((plan) => (
+                    <div key={plan.planName} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative group">
+                        <div className="absolute bottom-0 right-0 w-16 h-16 bg-slate-500/5 -mr-4 -mb-4 rounded-full"></div>
+                        <div className="flex items-center justify-between mb-3">
+                            <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Plan: {plan.planName}</span>
+                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[14px] ${getPlanBadge(plan.planName)}`}>
+                                <span className="material-symbols-outlined text-[16px]">
+                                    {plan.planName === 'ENTERPRISE' ? 'corporate_fare' : plan.planName === 'PRO' ? 'star' : 'person'}
+                                </span>
+                            </div>
                         </div>
+                        {loadingStats ? (
+                            <div className="h-8 w-16 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg"></div>
+                        ) : (
+                            <div className="text-2xl font-black">{plan.totalUser}</div>
+                        )}
                     </div>
-                    <div className="text-2xl font-black">320</div>
-                    <div className="text-[11px] text-primary mt-1 font-bold">25.6% of base</div>
-                </div>
-                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 font-bold text-[11px] uppercase tracking-wider">Suspended</span>
-                        <div className="w-8 h-8 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 flex items-center justify-center">
-                            <span className="material-symbols-outlined text-[18px]">block</span>
-                        </div>
-                    </div>
-                    <div className="text-2xl font-black">8</div>
-                    <div className="text-[11px] text-red-500 mt-1 font-bold">Requires attention</div>
-                </div>
+                ))}
             </div>
 
             {/* Filter Bar */}
             <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-wrap items-end gap-4 relative z-10">
                 <div className="flex-1 min-w-[200px] space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Search Users</label>
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Tìm theo tên</label>
                     <div className="relative">
-                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">search</span>
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">person</span>
                         <input
                             className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
-                            placeholder="Name, email, company..." type="text" />
+                            placeholder="Tên đầy đủ..."
+                            type="text"
+                            value={localFilters.fullName}
+                            onChange={(e) => setLocalFilters({ ...localFilters, fullName: e.target.value })}
+                        />
                     </div>
                 </div>
-                <div className="w-40 space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Plan</label>
-                    <select className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none">
-                        <option>All Plans</option>
-                        <option>Free</option>
-                        <option>Pro</option>
-                        <option>Enterprise</option>
-                    </select>
-                </div>
-                <div className="w-40 space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Status</label>
-                    <select className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none">
-                        <option>All Status</option>
-                        <option>Active</option>
-                        <option>Suspended</option>
-                    </select>
-                </div>
-                <div className="w-48 space-y-1.5">
-                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Date Range</label>
+                <div className="flex-1 min-w-[200px] space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Tìm theo Email</label>
                     <div className="relative">
-                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">calendar_today</span>
+                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">mail</span>
                         <input
-                            className="w-full pl-4 pr-10 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm cursor-pointer outline-none focus:ring-2 focus:ring-primary/20"
-                            readOnly type="text" value="Last 30 Days" />
+                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none"
+                            placeholder="Email..."
+                            type="email"
+                            value={localFilters.email}
+                            onChange={(e) => setLocalFilters({ ...localFilters, email: e.target.value })}
+                        />
                     </div>
+                </div>
+                <div className="w-40 space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Gói</label>
+                    <select
+                        className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={localFilters.planType}
+                        onChange={(e) => setLocalFilters({ ...localFilters, planType: e.target.value })}
+                    >
+                        <option value="">Tất cả các gói</option>
+                        <option value="FREE">Free</option>
+                        <option value="PRO">Pro</option>
+                        <option value="ENTERPRISE">Enterprise</option>
+                    </select>
+                </div>
+                <div className="w-32 space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Quyền</label>
+                    <select
+                        className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={localFilters.role}
+                        onChange={(e) => setLocalFilters({ ...localFilters, role: e.target.value })}
+                    >
+                        <option value="">Tất cả</option>
+                        <option value="ADMIN">Admin</option>
+                        <option value="USER">User</option>
+                    </select>
+                </div>
+                <div className="w-40 space-y-1.5">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-tight ml-1">Trạng thái</label>
+                    <select
+                        className="w-full py-2.5 px-3 bg-slate-50 dark:bg-slate-800 border-none rounded-xl text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                        value={localFilters.status}
+                        onChange={(e) => setLocalFilters({ ...localFilters, status: e.target.value })}
+                    >
+                        <option value="">Tất cả trạng thái</option>
+                        <option value="ACTIVE">Hoạt động</option>
+                        <option value="SUSPENDED">Đã khóa</option>
+                        <option value="PENDING">Chờ duyệt</option>
+                    </select>
                 </div>
                 <div className="flex items-center gap-2">
-                    <button className="px-5 py-2.5 bg-slate-900 dark:bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all">Apply</button>
-                    <button className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all">Reset</button>
+                    <button
+                        onClick={handleApplyFilters}
+                        disabled={loading}
+                        className="px-5 py-2.5 bg-slate-900 dark:bg-primary text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all disabled:opacity-50">Lọc</button>
+                    <button
+                        onClick={handleResetFilters}
+                        disabled={loading}
+                        className="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-sm hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50">Đặt lại</button>
                 </div>
             </div>
 
@@ -163,50 +301,135 @@ const AdminUsers = () => {
                         <thead>
                             <tr className="bg-slate-50/50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800">
                                 <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">User ID</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Name &amp; Email</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Company</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Plan</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">APIs Used</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Last Login</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Created</th>
-                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Actions</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Tên & Email</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Gói</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Quyền</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center">Trạng thái</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Đăng nhập cuối</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest">Ngày tạo</th>
+                                <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right">Hành động</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {users.map((user, idx) => (
-                                <tr key={idx} onClick={() => setSelectedUser(user)} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer">
-                                    <td className="px-6 py-4 text-xs font-mono text-slate-400">{user.id}</td>
+                            {loading && (
+                                <tr>
+                                    <td colSpan="8" className="px-6 py-10 text-center text-slate-400">
+                                        <div className="flex flex-col items-center gap-2">
+                                            <span className="material-symbols-outlined animate-spin text-3xl">refresh</span>
+                                            <p className="font-bold">Đang tải dữ liệu...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                            {!loading && users.length === 0 && (
+                                <tr>
+                                    <td colSpan="8" className="px-6 py-10 text-center text-slate-400">
+                                        <p className="font-bold">Không tìm thấy người dùng nào.</p>
+                                    </td>
+                                </tr>
+                            )}
+                            {!loading && users.map((user) => (
+                                <tr key={user.id} onClick={(e) => {
+                                    if (e.target.closest('button')) return;
+                                    setSelectedUser(user);
+                                }} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors group cursor-pointer">
+                                    <td className="px-6 py-4 text-[10px] font-mono text-slate-400 max-w-[100px] truncate">{user.id}</td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100">
-                                                <img alt="User Avatar" className="w-full h-full object-cover" src={user.avatar} />
+                                            <div className="w-9 h-9 rounded-full overflow-hidden bg-slate-100 border border-slate-200 dark:border-slate-700">
+                                                <img
+                                                    alt="User Avatar"
+                                                    className="w-full h-full object-cover"
+                                                    src={user.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.fullName)}&background=random`}
+                                                />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-bold">{user.name}</p>
+                                                <p className="text-sm font-bold">{user.fullName}</p>
                                                 <p className="text-xs text-slate-500">{user.email}</p>
                                             </div>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium">{user.company}</td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${user.planClass}`}>
-                                            {user.plan}
+                                        <span className={`px-2 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${getPlanBadge(user.planType)}`}>
+                                            {user.planType}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-center font-bold text-sm">{user.apisUsed}</td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                                            {user.role}
+                                        </span>
+                                    </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center justify-center gap-1.5">
-                                            <span className={`w-1.5 h-1.5 rounded-full ${user.statusColor}`}></span>
-                                            <span className={`text-xs font-bold ${user.statusText}`}>{user.status}</span>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${getStatusBadge(user.status).bg}`}></span>
+                                            <span className={`text-xs font-bold ${getStatusBadge(user.status).text}`}>{user.status}</span>
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 text-xs text-slate-500 font-medium">{user.lastLogin}</td>
-                                    <td className="px-6 py-4 text-xs text-slate-500 font-medium">{user.created}</td>
+                                    <td className="px-6 py-4 text-xs text-slate-500 font-medium">{formatDate(user.lastLoginAt)}</td>
+                                    <td className="px-6 py-4 text-xs text-slate-500 font-medium">{formatDate(user.createdAt)}</td>
                                     <td className="px-6 py-4 text-right">
-                                        <button className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-400 transition-colors">
-                                            <span className="material-symbols-outlined text-[20px]">more_vert</span>
-                                        </button>
+                                        <div className="flex items-center justify-end user-action-menu relative">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setActiveMenuId(activeMenuId === user.id ? null : user.id);
+                                                }}
+                                                className={`p-1.5 rounded-lg transition-all ${activeMenuId === user.id ? 'bg-slate-100 dark:bg-slate-800 text-primary' : 'text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                                            >
+                                                <span className="material-symbols-outlined text-[20px]">more_vert</span>
+                                            </button>
+
+                                            {activeMenuId === user.id && (
+                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl shadow-xl z-[100] py-2 animate-in fade-in zoom-in duration-150">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedUser(user);
+                                                            setActiveMenuId(null);
+                                                        }}
+                                                        className="w-full px-4 py-2 text-left text-sm font-bold flex items-center gap-2 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">visibility</span>
+                                                        Xem chi tiết
+                                                    </button>
+
+                                                    {user.status === 'ACTIVE' ? (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleBlockUser(user.id);
+                                                                setActiveMenuId(null);
+                                                            }}
+                                                            className="w-full px-4 py-2 text-left text-sm font-bold flex items-center gap-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[18px]">block</span>
+                                                            Khóa tài khoản
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleActiveUser(user.id);
+                                                                setActiveMenuId(null);
+                                                            }}
+                                                            className="w-full px-4 py-2 text-left text-sm font-bold flex items-center gap-2 text-green-500 hover:bg-green-50 dark:hover:bg-green-900/10 transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                                            Kích hoạt tài khoản
+                                                        </button>
+                                                    )}
+
+                                                    <div className="my-1 border-t border-slate-100 dark:border-slate-800"></div>
+
+                                                    <button
+                                                        className="w-full px-4 py-2 text-left text-sm font-bold flex items-center gap-2 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                                                    >
+                                                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                                                        Chỉnh sửa
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -215,22 +438,62 @@ const AdminUsers = () => {
                 </div>
 
                 {/* Pagination */}
-                <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/30 flex items-center justify-between">
-                    <p className="text-xs font-bold text-slate-500">Showing 1-10 of 1,248 users</p>
-                    <div className="flex items-center gap-2">
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 disabled:opacity-50" disabled>
-                            <span className="material-symbols-outlined text-[18px]">chevron_left</span>
-                        </button>
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-primary text-white font-bold text-xs">1</button>
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800">2</button>
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800">3</button>
-                        <span className="text-slate-400">...</span>
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 font-bold text-xs hover:bg-slate-50 dark:hover:bg-slate-800">125</button>
-                        <button className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 dark:border-slate-700 text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800">
-                            <span className="material-symbols-outlined text-[18px]">chevron_right</span>
-                        </button>
+                {pagination.totalElements > 0 && (
+                    <div className="px-6 py-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/30 dark:bg-slate-800/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <p className="text-[13px] font-bold text-slate-500">
+                                <span className="text-slate-900 dark:text-white">{pagination.page * pagination.size + 1}</span>
+                                <span className="mx-1">-</span>
+                                <span className="text-slate-900 dark:text-white">{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span>
+                                <span className="mx-1">/</span>
+                                <span className="text-primary">{pagination.totalElements}</span> người dùng
+                            </p>
+                            <div className="h-4 w-[1px] bg-slate-200 dark:bg-slate-700 hidden sm:block"></div>
+                            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-tighter hidden sm:block">
+                                Trang {pagination.page + 1} / {pagination.totalPages}
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                            <button
+                                disabled={pagination.page === 0 || loading}
+                                onClick={() => handlePageChange(pagination.page - 1)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:border-primary/30 transition-all shadow-sm"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_left</span>
+                            </button>
+
+                            <div className="flex items-center gap-1 mx-1">
+                                {[...Array(pagination.totalPages)].map((_, i) => (
+                                    (i === 0 || i === pagination.totalPages - 1 || (i >= pagination.page - 1 && i <= pagination.page + 1)) ? (
+                                        <button
+                                            key={i}
+                                            onClick={() => handlePageChange(i)}
+                                            disabled={loading}
+                                            className={`w-10 h-10 flex items-center justify-center rounded-xl font-bold text-sm transition-all ${pagination.page === i
+                                                ? 'bg-primary text-white shadow-lg shadow-primary/30 scale-105'
+                                                : 'text-slate-600 dark:text-slate-400 hover:bg-white dark:hover:bg-slate-800 hover:text-primary transition-all'} disabled:opacity-50`}
+                                        >
+                                            {i + 1}
+                                        </button>
+                                    ) : (
+                                        (i === 1 || i === pagination.totalPages - 2) ? (
+                                            <span key={i} className="w-8 text-center text-slate-400 font-bold text-xs">...</span>
+                                        ) : null
+                                    )
+                                ))}
+                            </div>
+
+                            <button
+                                disabled={pagination.last || pagination.page === pagination.totalPages - 1 || loading}
+                                onClick={() => handlePageChange(pagination.page + 1)}
+                                className="w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white dark:hover:bg-slate-800 hover:text-primary hover:border-primary/30 transition-all shadow-sm"
+                            >
+                                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
+                            </button>
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
 
             {/* Slide-out Side Panel for User Details */}
@@ -243,7 +506,7 @@ const AdminUsers = () => {
                         <div className="h-full flex flex-col">
                             {/* Panel Header */}
                             <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                                <h3 className="font-bold text-lg">User Details</h3>
+                                <h3 className="font-bold text-lg">Chi tiết người dùng</h3>
                                 <button onClick={() => setSelectedUser(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 transition-colors">
                                     <span className="material-symbols-outlined">close</span>
                                 </button>
@@ -253,65 +516,44 @@ const AdminUsers = () => {
                             <div className="flex-1 overflow-y-auto p-6 space-y-8">
                                 {/* Profile Section */}
                                 <div className="text-center">
-                                    <div className="w-24 h-24 rounded-3xl mx-auto overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4 ring-4 ring-primary/10">
-                                        <img alt="Large User Avatar" className="w-full h-full object-cover" src={selectedUser.avatar} />
+                                    <div className="w-24 h-24 rounded-3xl mx-auto overflow-hidden bg-slate-100 dark:bg-slate-800 mb-4 ring-4 ring-primary/10 border border-slate-200 dark:border-slate-700">
+                                        <img
+                                            alt="Large User Avatar"
+                                            className="w-full h-full object-cover"
+                                            src={selectedUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.fullName)}&background=random`}
+                                        />
                                     </div>
-                                    <h4 className="text-xl font-black">{selectedUser.name}</h4>
+                                    <h4 className="text-xl font-black">{selectedUser.fullName}</h4>
                                     <p className="text-sm text-slate-500 font-medium">{selectedUser.email}</p>
                                     <div className="mt-4 flex items-center justify-center gap-2">
-                                        <span className={`px-3 py-1 ${selectedUser.planClass.replace('text-slate-500', 'text-white').replace('bg-slate-100', 'bg-slate-500')} text-[10px] font-black rounded-full uppercase`}>
-                                            {selectedUser.plan} Plan
+                                        <span className={`px-3 py-1 ${getPlanBadge(selectedUser.planType)} text-[10px] font-black rounded-full uppercase`}>
+                                            Gói {selectedUser.planType}
                                         </span>
-                                        <span className={`px-3 py-1 bg-green-50 dark:bg-green-900/20 text-green-600 ${selectedUser.status === 'Suspended' ? 'bg-red-50 dark:bg-red-900/20 text-red-600' : ''} text-[10px] font-black rounded-full uppercase tracking-tighter`}>
-                                            {selectedUser.status} Status
+                                        <span className={`px-3 py-1 ${getStatusBadge(selectedUser.status).lightBg} ${getStatusBadge(selectedUser.status).text} text-[10px] font-black rounded-full uppercase tracking-tighter`}>
+                                            {selectedUser.status}
                                         </span>
                                     </div>
                                 </div>
 
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">API Requests</p>
-                                        <p className="text-xl font-bold">1.2M</p>
-                                    </div>
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Endpoints</p>
-                                        <p className="text-xl font-bold">{selectedUser.apisUsed}</p>
-                                    </div>
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Error Rate</p>
-                                        <p className="text-xl font-bold text-green-500">0.02%</p>
-                                    </div>
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Latency</p>
-                                        <p className="text-xl font-bold text-primary">145ms</p>
-                                    </div>
-                                </div>
-
-                                {/* Activity Timeline */}
+                                {/* Information Section */}
                                 <div className="space-y-4">
-                                    <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest">Recent Activity</h5>
-                                    <div className="space-y-4 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100 dark:before:bg-slate-800">
-                                        <div className="relative pl-8">
-                                            <span className="absolute left-0 top-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center text-white ring-4 ring-white dark:ring-slate-900">
-                                                <span className="material-symbols-outlined text-[14px]">login</span>
-                                            </span>
-                                            <p className="text-sm font-bold">Successful login</p>
-                                            <p className="text-xs text-slate-500 font-medium">May 15, 2024 at 10:42 AM</p>
+                                    <h5 className="text-xs font-black text-slate-400 uppercase tracking-widest">Thông tin tài khoản</h5>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex justify-between items-center">
+                                            <p className="text-xs font-bold text-slate-500">ID người dùng</p>
+                                            <p className="text-xs font-mono font-bold text-slate-400">{selectedUser.id}</p>
                                         </div>
-                                        <div className="relative pl-8">
-                                            <span className="absolute left-0 top-1 w-6 h-6 rounded-full bg-primary flex items-center justify-center text-white ring-4 ring-white dark:ring-slate-900">
-                                                <span className="material-symbols-outlined text-[14px]">api</span>
-                                            </span>
-                                            <p className="text-sm font-bold">New API Key generated</p>
-                                            <p className="text-xs text-slate-500 font-medium">May 14, 2024 at 03:15 PM</p>
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex justify-between items-center">
+                                            <p className="text-xs font-bold text-slate-500">Công ty</p>
+                                            <p className="text-xs font-bold">{selectedUser.company || 'N/A'}</p>
                                         </div>
-                                        <div className="relative pl-8">
-                                            <span className="absolute left-0 top-1 w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white ring-4 ring-white dark:ring-slate-900">
-                                                <span className="material-symbols-outlined text-[14px]">credit_card</span>
-                                            </span>
-                                            <p className="text-sm font-bold">Subscription renewed</p>
-                                            <p className="text-xs text-slate-500 font-medium">May 12, 2024 at 09:00 AM</p>
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex justify-between items-center">
+                                            <p className="text-xs font-bold text-slate-500">Ngày gia nhập</p>
+                                            <p className="text-xs font-bold">{formatDate(selectedUser.createdAt)}</p>
+                                        </div>
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-2xl flex justify-between items-center">
+                                            <p className="text-xs font-bold text-slate-500">Đăng nhập cuối</p>
+                                            <p className="text-xs font-bold">{formatDate(selectedUser.lastLoginAt)}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -319,11 +561,25 @@ const AdminUsers = () => {
 
                             {/* Panel Footer */}
                             <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 grid grid-cols-2 gap-3">
-                                <button className="px-4 py-3 bg-white dark:bg-slate-800 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-all">
-                                    Suspend User
-                                </button>
+                                {selectedUser.status === 'ACTIVE' ? (
+                                    <button
+                                        onClick={() => handleBlockUser(selectedUser.id)}
+                                        className="px-4 py-3 bg-white dark:bg-slate-800 border border-red-200 text-red-600 rounded-xl font-bold text-sm hover:bg-red-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">block</span>
+                                        Khóa User
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleActiveUser(selectedUser.id)}
+                                        className="px-4 py-3 bg-white dark:bg-slate-800 border border-green-200 text-green-600 rounded-xl font-bold text-sm hover:bg-green-50 transition-all flex items-center justify-center gap-2"
+                                    >
+                                        <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                                        Kích hoạt
+                                    </button>
+                                )}
                                 <button className="px-4 py-3 bg-primary text-white rounded-xl font-bold text-sm shadow-lg shadow-primary/20 hover:opacity-90 transition-all">
-                                    Edit Profile
+                                    Sửa thông tin
                                 </button>
                             </div>
                         </div>
