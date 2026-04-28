@@ -42,7 +42,7 @@ const LoginModal = ({ isOpen, onClose, onSwitchToSignup, onSwitchToForgotPasswor
             setPassword('');
             setFormError('');
         }
-    }, [initialEmail, isOpen, navigate, onClose]);
+    }, [isOpen, initialEmail]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

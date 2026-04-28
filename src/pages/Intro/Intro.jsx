@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Header from '../../components/Layout/Header';
 import Footer from '../../components/Layout/Footer';
 import Hero from './components/Hero';
@@ -17,28 +17,31 @@ const Intro = () => {
     const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
     const [loginEmail, setLoginEmail] = useState('');
 
-    const handleOpenSignup = () => setIsSignupModalOpen(true);
-    const handleCloseSignup = () => setIsSignupModalOpen(false);
+    const handleOpenSignup = useCallback(() => setIsSignupModalOpen(true), []);
+    const handleCloseSignup = useCallback(() => setIsSignupModalOpen(false), []);
 
-    const handleSwitchToLogin = (email = '') => {
+    const handleSwitchToLogin = useCallback((email = '') => {
         if (typeof email === 'string') {
             setLoginEmail(email);
         }
         setIsSignupModalOpen(false);
         setIsForgotPasswordModalOpen(false);
         setIsLoginModalOpen(true);
-    };
+    }, []);
 
-    const handleSwitchToSignup = () => {
+    const handleSwitchToSignup = useCallback(() => {
         setIsLoginModalOpen(false);
         setIsForgotPasswordModalOpen(false);
         setIsSignupModalOpen(true);
-    };
+    }, []);
 
-    const handleSwitchToForgotPassword = () => {
+    const handleSwitchToForgotPassword = useCallback(() => {
         setIsLoginModalOpen(false);
         setIsForgotPasswordModalOpen(true);
-    };
+    }, []);
+
+    const handleCloseLogin = useCallback(() => setIsLoginModalOpen(false), []);
+    const handleCloseForgotPassword = useCallback(() => setIsForgotPasswordModalOpen(false), []);
 
     return (
         <div className="relative flex h-auto min-h-screen w-full flex-col overflow-x-hidden">
@@ -60,14 +63,14 @@ const Intro = () => {
             />
             <LoginModal
                 isOpen={isLoginModalOpen}
-                onClose={() => setIsLoginModalOpen(false)}
+                onClose={handleCloseLogin}
                 initialEmail={loginEmail}
                 onSwitchToSignup={handleSwitchToSignup}
                 onSwitchToForgotPassword={handleSwitchToForgotPassword}
             />
             <ForgotPasswordModal
                 isOpen={isForgotPasswordModalOpen}
-                onClose={() => setIsForgotPasswordModalOpen(false)}
+                onClose={handleCloseForgotPassword}
                 onSwitchToLogin={handleSwitchToLogin}
             />
         </div>
