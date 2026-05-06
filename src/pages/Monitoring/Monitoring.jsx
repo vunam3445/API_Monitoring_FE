@@ -3,10 +3,21 @@ import MonitoringHeader from './components/MonitoringHeader';
 import MonitorTable from './components/MonitorTable';
 import MonitorDetail from './components/MonitorDetail';
 import useMonitoring from './hooks/useMonitoring';
+import { useToast } from '../../components/UI/Toast';
+import { useConfirmDialog } from '../../components/UI/ConfirmDialog/ConfirmDialog';
+import { apiEndpointService } from '../../services/apiEndpointService';
+import AddAPIModal from '../APIList/components/AddAPIModal';
+import { useApiMonitors } from '../APIList/hooks/useApiMonitors';
 
 const Monitoring = () => {
     const { summary, keyHealth, events, loading, error, toggleStatus, refresh } = useMonitoring(8); // Limit last 8 events
     const [selectedMonitor, setSelectedMonitor] = useState(null);
+    const { addToast } = useToast();
+    const { confirm } = useConfirmDialog();
+    const { updateApi } = useApiMonitors();
+    
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editingApi, setEditingApi] = useState(null);
 
     const handleBackToList = () => {
         setSelectedMonitor(null);
@@ -15,11 +26,56 @@ const Monitoring = () => {
 
     const handleToggleMonitor = async (id) => {
         try {
+            const monitor = keyHealth.find(m => m.id === id);
+            const currentStatus = monitor ? monitor.isActive : false;
+            
+            // Optimistic behavior logic can be added in hook, but here we wait
             await toggleStatus(id);
+            addToast('success', `Monitor ${!currentStatus ? 'activated' : 'paused'} successfully`);
             // Re-fetch overall data to reflect the toggle in the list
             refresh();
         } catch (err) {
             console.error('Failed to toggle monitor status', err);
+            addToast('error', 'Failed to toggle monitor status');
+        }
+    };
+
+    const handleDeleteMonitor = async (id) => {
+        const isConfirmed = await confirm({
+            title: 'Delete API Endpoint',
+            message: 'Are you sure you want to permanently delete this API endpoint? This action cannot be undone.',
+            confirmText: 'Delete',
+            cancelText: 'Cancel',
+            type: 'danger',
+            icon: 'delete_forever'
+        });
+
+        if (isConfirmed) {
+            try {
+                await apiEndpointService.deleteApi(id);
+                addToast('success', 'API deleted successfully');
+                refresh();
+            } catch (error) {
+                console.error('Failed to delete API', error);
+                addToast('error', error?.message || 'Error deleting API monitor');
+            }
+        }
+    };
+
+    const handleEditMonitor = (monitor) => {
+        setEditingApi(monitor);
+        setIsEditModalOpen(true);
+    };
+
+    const handleSaveApi = async (formData) => {
+        try {
+            if (editingApi) {
+                await updateApi(editingApi.id, formData);
+            }
+            setIsEditModalOpen(false);
+            refresh();
+        } catch (error) {
+            // Unhandled errors will be automatically notified via Toast in Hook
         }
     };
 
@@ -53,11 +109,21 @@ const Monitoring = () => {
                                 loading={loading}
                                 onSelectMonitor={setSelectedMonitor} 
                                 onToggleStatus={handleToggleMonitor}
+                                onDelete={handleDeleteMonitor}
+                                onEdit={handleEditMonitor}
                             />
                         </div>
                     </>
                 )}
             </div>
+
+            {/* Forms Layer */}
+            <AddAPIModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={handleSaveApi}
+                initialData={editingApi}
+            />
         </div>
     );
 };

@@ -252,7 +252,10 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
             if (formData.maxMonitors === '') stepErrors.maxMonitors = 'Số lượng monitors không được để trống';
             if (Object.keys(stepErrors).length > 0) { setErrors(stepErrors); return; }
         }
-        setActiveStep((prev) => Math.min(prev + 1, steps.length - 1));
+        setActiveStep((prev) => {
+            const next = Math.min(prev + 1, steps.length - 1);
+            return next;
+        });
     };
 
     const handleBack = () => setActiveStep((prev) => Math.max(prev - 1, 0));
@@ -438,7 +441,7 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
             <div className="space-y-6 animate-fadeIn pb-4">
                 {/* Section Giới hạn */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {/* <div>
+                    <div>
                         <label className="block text-[11px] font-black uppercase text-slate-400 mb-2 tracking-widest">Giới hạn Monitors</label>
                         <div className="relative group">
                             <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-primary transition-colors">dns</span>
@@ -453,7 +456,7 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
                             />
                         </div>
                         {errors.maxMonitors && <p className="mt-1 text-xs text-rose-500">{errors.maxMonitors}</p>}
-                    </div> */}
+                    </div>
                     <div>
                         <label className="block text-[11px] font-black uppercase text-slate-400 mb-2 tracking-widest">Tần suất tối thiểu</label>
                         <div className="relative group">

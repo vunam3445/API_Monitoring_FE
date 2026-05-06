@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus }) => {
+const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus, onDelete, onEdit }) => {
     const getStatusStyle = (status) => {
         switch (status?.toUpperCase()) {
             case 'HEALTHY':
@@ -132,12 +132,14 @@ const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus 
                                             <span className="material-symbols-outlined text-lg">visibility</span>
                                         </button>
                                         <button
+                                            onClick={(e) => { e.stopPropagation(); onEdit && onEdit(item); }}
                                             className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-amber-500 transition-all active:scale-90"
                                             title="Edit Monitor"
                                         >
                                             <span className="material-symbols-outlined text-lg">edit_note</span>
                                         </button>
                                         <button
+                                            onClick={(e) => { e.stopPropagation(); onDelete && onDelete(item.id); }}
                                             className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl text-slate-400 hover:text-rose-500 transition-all active:scale-90"
                                             title="Delete Monitor"
                                         >

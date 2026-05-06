@@ -4,32 +4,93 @@ import { getStatusBadge, getPlanBadge, formatDate } from '../utils';
 import ApiDetailModal from '../../../../APIList/components/ApiDetailModal';
 import AlertDetailModal from '../../../../Alerts/components/AlertDetailModal';
 import LogDetailsPanel from '../../../../Logs/components/LogDetailsPanel';
+import { subscriptionPlanService } from '../../../../../services/subscriptionPlanService';
+import { useToast } from '../../../../../components/UI/Toast';
+import { apiEndpointService } from '../../../../../services/apiEndpointService';
+import { useConfirmDialog } from '../../../../../components/UI/ConfirmDialog/ConfirmDialog';
 
 // --- MOCK COMPONENTS FOR TABS ---
 
-const UserApisTab = () => {
-    // Mock Data into State
-    const [mockApis, setMockApis] = useState([
-        { id: 1, name: 'Production Auth API', method: 'POST', url: 'https://api.example.com/v1/auth', isActive: true, status: 'Healthy', latency: 45, uptimePercentage: 99.9, checkInterval: 5, expectedStatusCodes: "200,201", maxResponseTimeMs: 1000, createdAt: new Date().toISOString(), body: "{\"username\":\"admin\"}", headers: [{ key: "Authorization", value: "Bearer xyz" }] },
-        { id: 2, name: 'User Service', method: 'GET', url: 'https://api.example.com/v1/users', isActive: true, status: 'Warning', latency: 850, uptimePercentage: 98.2, checkInterval: 1, expectedStatusCodes: "200", maxResponseTimeMs: 500, createdAt: new Date().toISOString() },
-        { id: 3, name: 'Payment Webhook', method: 'POST', url: 'https://api.example.com/webhooks/stripe', isActive: false, status: 'Paused', latency: 0, uptimePercentage: 100, checkInterval: 10, expectedStatusCodes: "200", maxResponseTimeMs: 2000, createdAt: new Date().toISOString() },
-    ]);
+const UserApisTabSkeleton = () => (
+    <>
+        {Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={idx} className="animate-pulse hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div></td>
+                <td className="px-6 py-4"><div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-full w-10 mx-auto"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-full w-16 mx-auto"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div></td>
+                <td className="px-6 py-4"><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-16 ml-auto"></div></td>
+            </tr>
+        ))}
+    </>
+);
 
+const UserApisTab = ({ userId }) => {
+    const [apis, setApis] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ page: 0, size: 10, totalPages: 0, totalElements: 0 });
     const [selectedApi, setSelectedApi] = useState(null);
+    const toast = useToast();
+    const { confirm } = useConfirmDialog();
 
-    const handleToggleActive = (id) => {
-        setMockApis(prev => prev.map(api => {
-            if (api.id === id) {
-                const newActive = !api.isActive;
-                return { ...api, isActive: newActive, status: newActive ? 'Healthy' : 'Paused', latency: newActive ? 45 : 0 };
-            }
-            return api;
-        }));
+    const fetchApis = async (page = 0) => {
+        setLoading(true);
+        try {
+            const res = await adminUserService.getUserApis(userId, { page, size: pagination.size });
+            setApis(res.content || []);
+            setPagination(prev => ({
+                ...prev,
+                page: res.number !== undefined ? res.number : page,
+                totalPages: res.totalPages || 0,
+                totalElements: res.totalElements || 0
+            }));
+        } catch (error) {
+            console.error('Failed to fetch APIs', error);
+            toast.error('Lấy danh sách APIs thất bại');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm("Bạn có chắc chắn muốn xoá API này khỏi người dùng?")) {
-            setMockApis(prev => prev.filter(api => api.id !== id));
+    useEffect(() => {
+        if (userId) fetchApis(0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
+
+    const handleToggleActive = async (id) => {
+        try {
+            const api = apis.find(a => a.id === id);
+            const currentStatus = api ? api.isActive : false;
+
+            await apiEndpointService.toggleActive(id);
+            toast.success(`Monitor ${!currentStatus ? 'activated' : 'paused'} successfully`);
+            fetchApis(pagination.page);
+        } catch (error) {
+            console.error('Failed to toggle active', error);
+            toast.error('Cập nhật trạng thái thất bại');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        const isConfirmed = await confirm({
+            title: 'Xóa Monitor',
+            message: 'Bạn có chắc chắn muốn xóa Monitor này không? Hành động này không thể hoàn tác.',
+            confirmText: 'Xóa',
+            cancelText: 'Hủy',
+            type: 'danger',
+            icon: 'delete_forever'
+        });
+
+        if (isConfirmed) {
+            try {
+                await apiEndpointService.deleteApi(id);
+                toast.success('Xóa Monitor thành công');
+                fetchApis(pagination.page);
+            } catch (error) {
+                console.error('Failed to delete API', error);
+                toast.error('Xóa Monitor thất bại');
+            }
         }
     };
 
@@ -48,25 +109,25 @@ const UserApisTab = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {mockApis.length === 0 ? (
+                        {loading ? <UserApisTabSkeleton /> : apis.length === 0 ? (
                             <tr>
                                 <td colSpan="6" className="px-6 py-10 text-center text-slate-500">Người dùng không có Monitor nào.</td>
                             </tr>
                         ) : (
-                            mockApis.map(api => (
+                            apis.map(api => (
                                 <tr key={api.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className={`size-2.5 rounded-full ring-4 ${api.status === 'Healthy' ? 'bg-emerald-500 ring-emerald-500/10' : api.status === 'Warning' ? 'bg-amber-500 ring-amber-500/10' : 'bg-slate-300 ring-slate-300/10'}`}></div>
+                                            <div className={`size-2.5 rounded-full ring-4 ${api.lastStatus === 'UP' ? 'bg-emerald-500 ring-emerald-500/10' : api.lastStatus === 'DOWN' ? 'bg-rose-500 ring-rose-500/10' : 'bg-slate-300 ring-slate-300/10'}`}></div>
                                             <span className="font-bold text-slate-900 dark:text-slate-100">{api.name}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-2">
                                             <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-tighter border ${api.method === 'POST' ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-emerald-100 text-emerald-600 border-emerald-200'}`}>
-                                                {api.method}
+                                                {api.method || 'GET'}
                                             </span>
-                                            <span className="text-sm font-mono text-slate-500 dark:text-slate-400 max-w-[250px] truncate block" title={api.url}>{api.url}</span>
+                                            <span className="text-sm font-mono text-slate-500 dark:text-slate-400 max-w-[250px] truncate block" title={api.endpoint || api.url}>{api.endpoint || api.url}</span>
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-center">
@@ -81,12 +142,12 @@ const UserApisTab = () => {
                                         </button>
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${api.status === 'Healthy' ? 'bg-emerald-100 text-emerald-600' : api.status === 'Warning' ? 'bg-amber-100 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>
-                                            {api.status}
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${api.lastStatus === 'UP' ? 'bg-emerald-100 text-emerald-600' : api.lastStatus === 'DOWN' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>
+                                            {api.lastStatus || 'UNKNOWN'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-semibold">
-                                        {api.latency > 0 ? `${api.latency}ms` : '--'}
+                                        {api.uptime ? `${api.uptime}%` : '--'}
                                     </td>
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -114,11 +175,11 @@ const UserApisTab = () => {
             </div>
             {/* Pagination Mock */}
             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{mockApis.length > 0 ? 1 : 0}-{mockApis.length}</span> of <span className="text-slate-900 dark:text-slate-200">{mockApis.length}</span> APIs</p>
+                <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{apis.length > 0 ? pagination.page * pagination.size + 1 : 0}-{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span> of <span className="text-slate-900 dark:text-slate-200">{pagination.totalElements}</span> APIs</p>
                 <div className="flex items-center gap-2">
-                    <button disabled className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 opacity-50"><span className="material-symbols-outlined">chevron_left</span></button>
-                    <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">1</button>
-                    <button disabled className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 opacity-50"><span className="material-symbols-outlined">chevron_right</span></button>
+                    <button onClick={() => fetchApis(pagination.page - 1)} disabled={pagination.page <= 0 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_left</span></button>
+                    <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">{pagination.page + 1}</button>
+                    <button onClick={() => fetchApis(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages - 1 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_right</span></button>
                 </div>
             </div>
 
@@ -131,14 +192,51 @@ const UserApisTab = () => {
     );
 };
 
-const UserAlertsTab = () => {
-    // Mock Data
-    const mockAlerts = [
-        { id: 1, time: new Date().toISOString(), title: 'API Down Constraint', monitorName: 'Production Auth API', severity: 'CRITICAL', status: 'ACTIVE', message: 'API returned 500 Internal Server Error for 3 consecutive checks.', monitorUrl: 'https://api.example.com/v1/auth', avgLatencyMs: 250, lastStatusCode: 500, triggeredAt: new Date().toISOString(), consecutiveFailCount: 3, deliveryHistory: [{ id: 1, status: 'SENT', channel: 'EMAIL', destination: 'admin@company.com', sentAt: new Date().toISOString() }] },
-        { id: 2, time: new Date(Date.now() - 3600000).toISOString(), title: 'Latency Spike', monitorName: 'User Service', severity: 'WARNING', status: 'RESOLVED', message: 'Response time exceeded 800ms threshold.', monitorUrl: 'https://api.example.com/v1/users', avgLatencyMs: 850, lastStatusCode: 200, triggeredAt: new Date(Date.now() - 3600000).toISOString(), consecutiveFailCount: 1 },
-    ];
+const UserAlertsTabSkeleton = () => (
+    <>
+        {Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={idx} className="animate-pulse hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-full w-20"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-20"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48"></div></td>
+                <td className="px-6 py-4"><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-8 ml-auto"></div></td>
+            </tr>
+        ))}
+    </>
+);
 
+const UserAlertsTab = ({ userId }) => {
+    const [alerts, setAlerts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ page: 0, size: 10, totalPages: 0, totalElements: 0 });
     const [selectedAlert, setSelectedAlert] = useState(null);
+    const toast = useToast();
+
+    const fetchAlerts = async (page = 0) => {
+        setLoading(true);
+        try {
+            const res = await adminUserService.getUserAlerts(userId, { page, size: pagination.size });
+            setAlerts(res.items || res.alerts || []);
+            setPagination(prev => ({
+                ...prev,
+                page: res.page !== undefined ? res.page : page,
+                totalPages: res.totalPages || 0,
+                totalElements: res.totalItems !== undefined ? res.totalItems : (res.totalElements || 0)
+            }));
+        } catch (error) {
+            console.error('Failed to fetch Alerts', error);
+            toast.error('Lấy danh sách cảnh báo thất bại');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (userId) fetchAlerts(0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
 
     return (
         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in duration-300">
@@ -155,43 +253,49 @@ const UserAlertsTab = () => {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                        {mockAlerts.map(alert => (
-                            <tr key={alert.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
-                                <td className="px-6 py-4 text-sm font-medium text-slate-500">{new Date(alert.time).toLocaleTimeString()}</td>
-                                <td className="px-6 py-4 font-bold">{alert.monitorName}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border flex items-center gap-1.5 w-max ${alert.severity === 'CRITICAL' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
-                                        <span className={`w-1.5 h-1.5 rounded-full ${alert.severity === 'CRITICAL' ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`}></span>
-                                        {alert.severity}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${alert.status === 'ACTIVE' ? 'border-primary/30 text-primary bg-primary/5' : 'border-emerald-500/30 text-emerald-600 bg-emerald-500/5'}`}>
-                                        {alert.status}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate">{alert.message}</td>
-                                <td className="px-6 py-4 text-right">
-                                    <button
-                                        onClick={() => setSelectedAlert(alert)}
-                                        className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-all opacity-0 group-hover:opacity-100"
-                                        title="Xem chi tiết"
-                                    >
-                                        <span className="material-symbols-outlined text-lg font-black flex">info</span>
-                                    </button>
-                                </td>
+                        {loading ? <UserAlertsTabSkeleton /> : alerts.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="px-6 py-10 text-center text-slate-500">Người dùng không có cảnh báo nào.</td>
                             </tr>
-                        ))}
+                        ) : (
+                            alerts.map(alert => (
+                                <tr key={alert.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                                    <td className="px-6 py-4 text-sm font-medium text-slate-500">{new Date(alert.time || alert.triggeredAt).toLocaleTimeString()}</td>
+                                    <td className="px-6 py-4 font-bold">{alert.apiName || alert.monitorName}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border flex items-center gap-1.5 w-max ${alert.severity === 'CRITICAL' || alert.severity === 'ERROR' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${alert.severity === 'CRITICAL' || alert.severity === 'ERROR' ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                                            {alert.severity}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${alert.status === 'UNRESOLVED' || alert.status === 'ACTIVE' ? 'border-primary/30 text-primary bg-primary/5' : 'border-emerald-500/30 text-emerald-600 bg-emerald-500/5'}`}>
+                                            {alert.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate">{alert.message}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button
+                                            onClick={() => setSelectedAlert(alert)}
+                                            className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                            title="Xem chi tiết"
+                                        >
+                                            <span className="material-symbols-outlined text-lg font-black flex">info</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
             {/* Pagination Mock */}
             <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">1-2</span> of <span className="text-slate-900 dark:text-slate-200">2</span> Alerts</p>
+                <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{alerts.length > 0 ? pagination.page * pagination.size + 1 : 0}-{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span> of <span className="text-slate-900 dark:text-slate-200">{pagination.totalElements}</span> Alerts</p>
                 <div className="flex items-center gap-2">
-                    <button disabled className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 opacity-50"><span className="material-symbols-outlined">chevron_left</span></button>
-                    <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">1</button>
-                    <button disabled className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 opacity-50"><span className="material-symbols-outlined">chevron_right</span></button>
+                    <button onClick={() => fetchAlerts(pagination.page - 1)} disabled={pagination.page <= 0 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_left</span></button>
+                    <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">{pagination.page + 1}</button>
+                    <button onClick={() => fetchAlerts(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages - 1 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_right</span></button>
                 </div>
             </div>
 
@@ -205,17 +309,64 @@ const UserAlertsTab = () => {
     );
 };
 
-const UserLogsTab = () => {
-    // Mock Data
-    const mockLogs = [
-        { id: 1, time: new Date().toISOString(), monitorName: 'Production Auth API', monitorMethod: 'POST', monitorUrl: 'https://api.example.com/v1/auth', statusCode: 500, responseTimeMs: 120, isUp: false, errorMessage: 'Connection refused', assertionStatus: 'FAILED', responseSnippet: '<html>500 Internal Server Error</html>' },
-        { id: 2, time: new Date(Date.now() - 60000).toISOString(), monitorName: 'Production Auth API', monitorMethod: 'POST', monitorUrl: 'https://api.example.com/v1/auth', statusCode: 500, responseTimeMs: 105, isUp: false, errorMessage: 'Timeout', responseSnippet: '' },
-        { id: 3, time: new Date(Date.now() - 120000).toISOString(), monitorName: 'Production Auth API', monitorMethod: 'POST', monitorUrl: 'https://api.example.com/v1/auth', statusCode: 200, responseTimeMs: 85, isUp: true, assertionStatus: 'PASSED', responseSnippet: '{"token":"xyz","userId":123}' },
-        { id: 4, time: new Date(Date.now() - 180000).toISOString(), monitorName: 'User Service', monitorMethod: 'GET', monitorUrl: 'https://api.example.com/v1/users', statusCode: 200, responseTimeMs: 850, isUp: true, assertionStatus: 'PASSED', responseSnippet: '[{"id":1,"name":"John"}]' },
-        { id: 5, time: new Date(Date.now() - 240000).toISOString(), monitorName: 'User Service', monitorMethod: 'GET', monitorUrl: 'https://api.example.com/v1/users', statusCode: 200, responseTimeMs: 450, isUp: true, assertionStatus: 'PASSED', responseSnippet: '[{"id":1,"name":"John"}]' },
-    ];
+const UserLogsTabSkeleton = () => (
+    <>
+        {Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={idx} className="animate-pulse hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-12"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-full w-12 mx-auto"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16 ml-auto"></div></td>
+            </tr>
+        ))}
+    </>
+);
 
+const UserLogsTab = ({ userId }) => {
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({ page: 0, size: 10, totalPages: 0, totalElements: 0 });
     const [selectedLog, setSelectedLog] = useState(null);
+    const toast = useToast();
+
+    const fetchLogs = async (page = 0) => {
+        setLoading(true);
+        try {
+            const res = await adminUserService.getUserUptimeLogs(userId, { page, size: pagination.size });
+            setLogs(res.content || []);
+            setPagination(prev => ({
+                ...prev,
+                page: res.number !== undefined ? res.number : page,
+                totalPages: res.totalPages || 0,
+                totalElements: res.totalElements || 0
+            }));
+        } catch (error) {
+            console.error('Failed to fetch Logs', error);
+            toast.error('Lấy danh sách nhật ký thất bại');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (userId) fetchLogs(0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [userId]);
+
+    const handleRetry = async (monitorId) => {
+        if (!monitorId) return;
+        // Optional: show a loading state on the button or panel
+        try {
+            await apiEndpointService.retryApi(monitorId);
+            toast.success('Tái khởi động kiểm tra thành công');
+            setTimeout(() => fetchLogs(pagination.page), 1500);
+        } catch (error) {
+            console.error('Retry failed:', error);
+            const errorMsg = error?.message || error?.response?.data?.message || 'Không thể khởi động kiểm tra';
+            toast.error(errorMsg);
+        }
+    };
 
     return (
         <div className="flex gap-4 items-start animate-in fade-in duration-300">
@@ -232,38 +383,44 @@ const UserLogsTab = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                            {mockLogs.map(log => (
-                                <tr
-                                    key={log.id}
-                                    onClick={() => setSelectedLog(log)}
-                                    className={`cursor-pointer transition-colors ${selectedLog?.id === log.id ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
-                                >
-                                    <td className="px-6 py-4 font-mono text-xs text-slate-500">{new Date(log.time).toLocaleString()}</td>
-                                    <td className="px-6 py-4 font-bold text-sm">{log.monitorName}</td>
-                                    <td className="px-6 py-4">
-                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase border ${log.monitorMethod === 'POST' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
-                                            {log.monitorMethod}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`flex items-center justify-center gap-1.5 font-bold text-xs ${log.statusCode === 200 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                            <span className={`size-2 rounded-full ${log.statusCode === 200 ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                            {log.statusCode}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">{log.responseTimeMs}ms</td>
+                            {loading ? <UserLogsTabSkeleton /> : logs.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-10 text-center text-slate-500">Người dùng không có nhật ký nào.</td>
                                 </tr>
-                            ))}
+                            ) : (
+                                logs.map(log => (
+                                    <tr
+                                        key={log.id}
+                                        onClick={() => setSelectedLog(log)}
+                                        className={`cursor-pointer transition-colors ${selectedLog?.id === log.id ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
+                                    >
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-500">{new Date(log.checkedAt || log.time).toLocaleString()}</td>
+                                        <td className="px-6 py-4 font-bold text-sm">{log.monitorName}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase border ${log.monitorMethod === 'POST' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+                                                {log.monitorMethod || log.method || 'GET'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`flex items-center justify-center gap-1.5 font-bold text-xs ${log.statusCode === 200 || log.status === 'UP' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                <span className={`size-2 rounded-full ${log.statusCode === 200 || log.status === 'UP' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                                {log.statusCode || (log.status === 'UP' ? 200 : 500)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">{log.responseTimeMs}ms</td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
                 {/* Pagination Mock */}
                 <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
-                    <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">1-5</span> of <span className="text-slate-900 dark:text-slate-200">5</span> Logs</p>
+                    <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{logs.length > 0 ? pagination.page * pagination.size + 1 : 0}-{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span> of <span className="text-slate-900 dark:text-slate-200">{pagination.totalElements}</span> Logs</p>
                     <div className="flex items-center gap-2">
-                        <button disabled className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 opacity-50"><span className="material-symbols-outlined">chevron_left</span></button>
-                        <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">1</button>
-                        <button disabled className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-400 opacity-50"><span className="material-symbols-outlined">chevron_right</span></button>
+                        <button onClick={() => fetchLogs(pagination.page - 1)} disabled={pagination.page <= 0 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_left</span></button>
+                        <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">{pagination.page + 1}</button>
+                        <button onClick={() => fetchLogs(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages - 1 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_right</span></button>
                     </div>
                 </div>
             </div>
@@ -271,9 +428,9 @@ const UserLogsTab = () => {
             {selectedLog && (
                 <div className="w-[400px] flex-shrink-0 animate-in slide-in-from-right duration-300">
                     <LogDetailsPanel
-                        log={{ ...selectedLog, checkedAt: selectedLog.time }} // align mock data to what component expects
+                        log={{ ...selectedLog, checkedAt: selectedLog.checkedAt || selectedLog.time }} // align to what component expects
                         onClose={() => setSelectedLog(null)}
-                        onRetry={() => { }}
+                        onRetry={() => handleRetry(selectedLog.monitorId || selectedLog.apiId)}
                     />
                 </div>
             )}
@@ -295,6 +452,20 @@ const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleAct
     });
     const [loadingStats, setLoadingStats] = useState(false);
 
+    // Plans state
+    const [plans, setPlans] = useState([]);
+    const [loadingPlans, setLoadingPlans] = useState(false);
+    const [selectedPlanId, setSelectedPlanId] = useState('');
+    const [isUpdatingPlan, setIsUpdatingPlan] = useState(false);
+
+    // Manual Extend State
+    const [extendDuration, setExtendDuration] = useState(1);
+    const [extendUnit, setExtendUnit] = useState('MONTHS');
+    const [extendNote, setExtendNote] = useState('');
+    const [extendAmount, setExtendAmount] = useState(0);
+
+    const toast = useToast();
+
     useEffect(() => {
         const fetchStats = async () => {
             if (!selectedUser?.id) return;
@@ -314,8 +485,47 @@ const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleAct
             }
         };
 
+        const fetchPlans = async () => {
+            setLoadingPlans(true);
+            try {
+                const res = await subscriptionPlanService.getAll();
+                // Assuming res is an array of plans or res.content
+                const plansData = Array.isArray(res) ? res : (res.content || []);
+                setPlans(plansData);
+            } catch (error) {
+                console.error("Failed to fetch plans:", error);
+            } finally {
+                setLoadingPlans(false);
+            }
+        };
+
         fetchStats();
+        fetchPlans();
     }, [selectedUser?.id]);
+
+    const handleUpdatePlan = async () => {
+        if (!selectedPlanId) {
+            toast.error("Vui lòng chọn một gói để cập nhật.");
+            return;
+        }
+
+        setIsUpdatingPlan(true);
+        try {
+            const res = await adminUserService.updateUserPlan(selectedUser.id, selectedPlanId);
+            toast.success(res.message || "Cập nhật gói đăng ký thành công");
+
+            // Cập nhật lại thông tin user hiển thị
+            const updatedPlan = plans.find(p => p.id === selectedPlanId);
+            if (updatedPlan) {
+                setSelectedUser(prev => ({ ...prev, planType: updatedPlan.name.toUpperCase() }));
+            }
+            setSelectedPlanId('');
+        } catch (error) {
+            toast.error(error.message || "Cập nhật gói thất bại.");
+        } finally {
+            setIsUpdatingPlan(false);
+        }
+    };
 
     if (!selectedUser) return null;
 
@@ -501,30 +711,102 @@ const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleAct
                                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Cập nhật gói</label>
                                 <div className="flex gap-2">
                                     <div className="flex-1 relative">
-                                        <select defaultValue="" className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer shadow-sm">
-                                            <option value="" disabled>Chọn gói mới...</option>
-                                            <option value="FREE">Gói Free</option>
-                                            <option value="PRO">Gói Pro</option>
-                                            <option value="ENTERPRISE">Gói Enterprise</option>
-                                        </select>
-                                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                                        {loadingPlans ? (
+                                            <div className="w-full h-[46px] bg-slate-200 dark:bg-slate-700 animate-pulse rounded-xl"></div>
+                                        ) : (
+                                            <>
+                                                <select
+                                                    value={selectedPlanId}
+                                                    onChange={(e) => setSelectedPlanId(e.target.value)}
+                                                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                                    disabled={isUpdatingPlan}
+                                                >
+                                                    <option value="" disabled>Chọn gói mới...</option>
+                                                    {plans.map(plan => (
+                                                        <option key={plan.id} value={plan.id}>{plan.name}</option>
+                                                    ))}
+                                                </select>
+                                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                                            </>
+                                        )}
                                     </div>
-                                    <button className="px-6 py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 shadow-md">
-                                        Xác nhận
+                                    <button
+                                        onClick={handleUpdatePlan}
+                                        disabled={!selectedPlanId || isUpdatingPlan || loadingPlans}
+                                        className="px-6 py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 shadow-md disabled:opacity-50 disabled:hover:shadow-none flex items-center justify-center gap-2 min-w-[120px]"
+                                    >
+                                        {isUpdatingPlan ? (
+                                            <>
+                                                <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                                                Đang xử lý
+                                            </>
+                                        ) : (
+                                            'Xác nhận'
+                                        )}
                                     </button>
                                 </div>
                             </div>
                         </div>
 
                         <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4">
-                            <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-700 dark:text-slate-200 font-bold text-sm transition-all shadow-sm">
-                                <span className="material-symbols-outlined text-[20px]">autorenew</span>
-                                Gia hạn thủ công
-                            </button>
-                            <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 font-bold text-sm transition-all shadow-sm">
+                            <div className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-2xl">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="60"
+                                            value={extendDuration}
+                                            onChange={(e) => setExtendDuration(e.target.value)}
+                                            className="w-20 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                        <div className="relative">
+                                            <select
+                                                value={extendUnit}
+                                                onChange={(e) => setExtendUnit(e.target.value)}
+                                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl pl-4 pr-10 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[100px]"
+                                            >
+                                                <option value="DAYS">Ngày</option>
+                                                <option value="MONTHS">Tháng</option>
+                                                <option value="YEARS">Năm</option>
+                                            </select>
+                                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">expand_more</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative flex-1 min-w-[150px]">
+                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">payments</span>
+                                        <input 
+                                            type="number"
+                                            value={extendAmount}
+                                            onChange={(e) => setExtendAmount(e.target.value)}
+                                            placeholder="Số tiền (nếu có)..."
+                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={extendNote}
+                                        onChange={(e) => setExtendNote(e.target.value)}
+                                        placeholder="Ghi chú thêm về việc gia hạn này..."
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={() => toast.info(`Chức năng gia hạn thủ công đang phát triển! Thông tin: ${extendDuration} ${extendUnit === 'DAYS' ? 'ngày' : extendUnit === 'MONTHS' ? 'tháng' : 'năm'}, Số tiền: ${extendAmount}, Note: ${extendNote}`)}
+                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-slate-700 dark:text-slate-200 font-bold text-sm transition-all shadow-sm active:scale-95">
+                                    <span className="material-symbols-outlined text-[20px]">autorenew</span>
+                                    Xác nhận gia hạn thủ công
+                                </button>
+                            </div>
+                            {/* <button className="flex items-center justify-center gap-2 px-6 py-3 bg-white hover:bg-rose-50 dark:bg-slate-800 dark:hover:bg-rose-900/20 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 font-bold text-sm transition-all shadow-sm">
                                 <span className="material-symbols-outlined text-[20px]">arrow_downward</span>
                                 Bắt buộc hạ cấp Free
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
@@ -557,9 +839,9 @@ const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleAct
                 </div>
 
                 <div className="min-h-[300px]">
-                    {activeTab === 'apis' && <UserApisTab />}
-                    {activeTab === 'alerts' && <UserAlertsTab />}
-                    {activeTab === 'logs' && <UserLogsTab />}
+                    {activeTab === 'apis' && <UserApisTab userId={selectedUser.id} />}
+                    {activeTab === 'alerts' && <UserAlertsTab userId={selectedUser.id} />}
+                    {activeTab === 'logs' && <UserLogsTab userId={selectedUser.id} />}
                 </div>
             </div>
         </div>

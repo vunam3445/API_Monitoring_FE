@@ -56,5 +56,36 @@ export const adminUserService = {
      */
     getUserMonthlyAlertStats: async (userId) => {
         return apiClient.get(`/api/v1/alerts/users/${userId}/monthly-stats`);
+    },
+
+    /**
+     * Update user subscription plan
+     * @param {string} userId - UUID of the user
+     * @param {string} planId - UUID of the plan
+     * @returns {Promise<Object>} - Action result
+     */
+    updateUserPlan: async (userId, planId) => {
+        return apiClient.put(`/api/v1/admin/users/${userId}/subscription-plan/${planId}`);
+    },
+
+    /**
+     * Get user's APIs (monitors)
+     */
+    getUserApis: async (userId, params) => {
+        return apiClient.get(`/api/Apis/user/${userId}`, { params });
+    },
+
+    /**
+     * Get user's Alerts
+     */
+    getUserAlerts: async (userId, params) => {
+        return apiClient.get(`/api/v1/alerts/users/${userId}`, { params });
+    },
+
+    /**
+     * Get user's Uptime Logs
+     */
+    getUserUptimeLogs: async (userId, params) => {
+        return apiClient.get(`/api/uptime-logs/user/${userId}`, { params });
     }
 };

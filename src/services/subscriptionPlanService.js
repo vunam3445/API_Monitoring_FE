@@ -21,6 +21,14 @@ export const subscriptionPlanService = {
     },
 
     /**
+     * Lấy tất cả danh sách plans
+     * @returns {Promise} List of SubscriptionPlan
+     */
+    getAll: async () => {
+        return apiClient.get(BASE_URL);
+    },
+
+    /**
      * Lấy plan theo ID
      * @param {string} id - UUID của plan
      * @returns {Promise} SubscriptionPlan object
