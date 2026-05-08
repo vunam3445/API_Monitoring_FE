@@ -84,6 +84,11 @@ const CURRENCY_OPTIONS = [
     { value: 'VND', label: 'VND (₫)', symbol: '₫' },
 ];
 
+const BILLING_CYCLE_OPTIONS = [
+    { value: 'MONTHLY', label: 'Tháng' },
+    { value: 'YEARLY', label: 'Năm' },
+];
+
 const INTERVAL_OPTIONS = [
     { value: 5, label: '5 seconds' },
     { value: 10, label: '10 seconds' },
@@ -102,6 +107,7 @@ const getInitialFormData = () => ({
     maxMonitors: '',
     minInterval: 60,
     features: {}, // Đảm bảo là object trống
+    billingCycle: 'MONTHLY',
     isActive: true,
 });
 
@@ -145,6 +151,7 @@ const planToFormData = (plan) => ({
     maxMonitors: plan.maxMonitors ?? '',
     minInterval: plan.minInterval ?? 60,
     features: parseFeaturesFromBackend(plan.features),
+    billingCycle: plan.billingCycle || 'MONTHLY',
     isActive: plan.isActive ?? true,
 });
 
@@ -278,6 +285,7 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
                 maxMonitors: Number(formData.maxMonitors),
                 minInterval: Number(formData.minInterval),
                 features: JSON.stringify(formData.features),
+                billingCycle: formData.billingCycle,
                 isActive: formData.isActive,
             };
 
@@ -373,6 +381,29 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
                     >
                         {CURRENCY_OPTIONS.map((opt) => (<option key={opt.value} value={opt.value}>{opt.label}</option>))}
                     </select>
+                </div>
+            </div>
+
+            {/* Billing Cycle */}
+            <div>
+                <label className="block text-xs font-bold uppercase text-slate-500 dark:text-slate-400 mb-1.5 tracking-wider">Chu kỳ thanh toán</label>
+                <div className="grid grid-cols-2 gap-3">
+                    {BILLING_CYCLE_OPTIONS.map((opt) => (
+                        <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setFormData(prev => ({ ...prev, billingCycle: opt.value }))}
+                            className={`flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl border font-bold text-sm transition-all ${formData.billingCycle === opt.value
+                                ? 'bg-primary text-white border-primary shadow-lg shadow-primary/20'
+                                : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-primary/50'
+                                }`}
+                        >
+                            <span className="material-symbols-outlined text-lg">
+                                {opt.value === 'MONTHLY' ? 'calendar_today' : 'calendar_month'}
+                            </span>
+                            {opt.label}
+                        </button>
+                    ))}
                 </div>
             </div>
 
@@ -502,7 +533,7 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
                     <h4 className="text-xl font-black text-slate-900 dark:text-white">{formData.name || 'Unnamed Plan'}</h4>
                     <div className="mt-2 flex items-baseline justify-center gap-0.5">
                         <span className="text-3xl font-black text-primary">{getCurrencySymbol()}{formData.price || '0'}</span>
-                        <span className="text-slate-500 text-sm">/mo</span>
+                        <span className="text-slate-500 text-sm">/{formData.billingCycle === 'MONTHLY' ? 'tháng' : 'năm'}</span>
                     </div>
                     <span className={`inline-flex items-center gap-1 mt-3 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${formData.isActive ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500'}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${formData.isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>

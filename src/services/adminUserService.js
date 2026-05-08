@@ -87,5 +87,14 @@ export const adminUserService = {
      */
     getUserUptimeLogs: async (userId, params) => {
         return apiClient.get(`/api/uptime-logs/user/${userId}`, { params });
+    },
+
+    /**
+     * Renew user subscription manually (Admin only)
+     * @param {string} userId - UUID of the user
+     * @param {Object} data - Renewal data { type, time, note, amount }
+     */
+    renewSubscriptionManual: async (userId, data) => {
+        return apiClient.post(`/api/subscriptions/users/${userId}/manual`, data);
     }
 };

@@ -5,6 +5,7 @@ import UserFilterBar from './components/UserFilterBar';
 import UserTable from './components/UserTable';
 import UserPagination from './components/UserPagination';
 import UserDetails from './components/UserDetails';
+import RenewalModal from './components/RenewalModal';
 
 const AdminUsers = () => {
     const {
@@ -16,6 +17,7 @@ const AdminUsers = () => {
         filters,
         handleBlockUser,
         handleActiveUser,
+        handleManualRenewal,
         handlePageChange,
         handleFilterChange,
         refresh
@@ -23,6 +25,8 @@ const AdminUsers = () => {
 
     const [selectedUser, setSelectedUser] = useState(null);
     const [activeMenuId, setActiveMenuId] = useState(null);
+    const [renewalModal, setRenewalModal] = useState({ isOpen: false, user: null });
+    const [renewing, setRenewing] = useState(false);
 
     // Local filter state for inputs
     const [localFilters, setLocalFilters] = useState({
@@ -128,6 +132,7 @@ const AdminUsers = () => {
                             setSelectedUser={setSelectedUser}
                             handleBlockUser={handleBlockUser}
                             handleActiveUser={handleActiveUser}
+                            onOpenRenewal={(user) => setRenewalModal({ isOpen: true, user })}
                         />
 
                         <UserPagination
@@ -137,6 +142,24 @@ const AdminUsers = () => {
                         />
                     </div>
                 </>
+            )}
+
+            {/* Renewal Modal */}
+            {renewalModal.isOpen && (
+                <RenewalModal
+                    isOpen={renewalModal.isOpen}
+                    user={renewalModal.user}
+                    loading={renewing}
+                    onClose={() => setRenewalModal({ isOpen: false, user: null })}
+                    onConfirm={async (userId, data) => {
+                        setRenewing(true);
+                        const success = await handleManualRenewal(userId, data);
+                        setRenewing(false);
+                        if (success) {
+                            setRenewalModal({ isOpen: false, user: null });
+                        }
+                    }}
+                />
             )}
         </div>
     );

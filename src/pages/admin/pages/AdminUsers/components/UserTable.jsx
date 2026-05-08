@@ -1,7 +1,7 @@
 import React from 'react';
 import { getStatusBadge, getPlanBadge, formatDate } from '../utils';
 
-const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedUser, handleBlockUser, handleActiveUser }) => {
+const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedUser, handleBlockUser, handleActiveUser, onOpenRenewal }) => {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -14,13 +14,14 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Trạng thái</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Đăng nhập cuối</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Ngày tạo</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Hết hạn gói</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Hành động</th>
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800">
                     {loading && (
                         <tr>
-                            <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
+                            <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
                                 <div className="flex flex-col items-center gap-3">
                                     <span className="material-symbols-outlined animate-spin text-4xl text-primary">refresh</span>
                                     <p className="font-bold">Đang tải dữ liệu người dùng...</p>
@@ -30,7 +31,7 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                     )}
                     {!loading && users.length === 0 && (
                         <tr>
-                            <td colSpan="8" className="px-6 py-12 text-center text-slate-400">
+                            <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
                                 <span className="material-symbols-outlined text-4xl mb-2 text-slate-300 dark:text-slate-600">group_off</span>
                                 <p className="font-bold">Không tìm thấy người dùng nào phù hợp với bộ lọc.</p>
                             </td>
@@ -77,6 +78,27 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                             </td>
                             <td className="px-6 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">{formatDate(user.lastLoginAt)}</td>
                             <td className="px-6 py-4 text-xs text-slate-500 font-medium whitespace-nowrap">{formatDate(user.createdAt)}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                                {user.currentPeriodEnd ? (() => {
+                                    const exp = new Date(user.currentPeriodEnd);
+                                    const now = new Date();
+                                    const daysLeft = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+                                    const isExpired = daysLeft < 0;
+                                    const isSoon = daysLeft >= 0 && daysLeft <= 30;
+                                    return (
+                                        <div className="flex flex-col gap-0.5">
+                                            <span className={`text-xs font-bold ${
+                                                isExpired ? 'text-red-500' : isSoon ? 'text-amber-500' : 'text-slate-600 dark:text-slate-300'
+                                            }`}>{formatDate(user.currentPeriodEnd)}</span>
+                                            <span className={`text-[10px] font-semibold ${
+                                                isExpired ? 'text-red-400' : isSoon ? 'text-amber-400' : 'text-slate-400'
+                                            }`}>
+                                                {isExpired ? `Hết hạn ${Math.abs(daysLeft)} ngày trước` : `Còn ${daysLeft} ngày`}
+                                            </span>
+                                        </div>
+                                    );
+                                })() : <span className="text-xs text-slate-300 dark:text-slate-600">--</span>}
+                            </td>
                             <td className="px-6 py-4 text-right">
                                 <div className="flex items-center justify-end user-action-menu relative">
                                     <button
@@ -130,6 +152,18 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                                             )}
 
                                             <div className="my-1 border-t border-slate-100 dark:border-slate-700"></div>
+
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    onOpenRenewal(user);
+                                                    setActiveMenuId(null);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm font-bold flex items-center gap-3 text-primary hover:bg-primary/5 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
+                                                Gia hạn gói cước
+                                            </button>
 
                                             <button
                                                 className="w-full px-4 py-2.5 text-left text-sm font-bold flex items-center gap-3 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"

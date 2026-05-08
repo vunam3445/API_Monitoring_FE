@@ -116,6 +116,18 @@ export const useAdminUsers = () => {
         setPagination(prev => ({ ...prev, page: 0 })); 
     };
 
+    const handleManualRenewal = async (userId, data) => {
+        try {
+            await adminUserService.renewSubscriptionManual(userId, data);
+            toast.success('Gia hạn gói cước thành công');
+            refreshAll();
+            return true;
+        } catch (error) {
+            toast.error(error.message || 'Không thể gia hạn gói cước');
+            return false;
+        }
+    };
+
     return {
         users,
         loading,
@@ -125,6 +137,7 @@ export const useAdminUsers = () => {
         filters,
         handleBlockUser,
         handleActiveUser,
+        handleManualRenewal,
         handlePageChange,
         handleFilterChange,
         refresh: refreshAll
