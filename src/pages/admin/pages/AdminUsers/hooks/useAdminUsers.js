@@ -43,7 +43,24 @@ export const useAdminUsers = () => {
             
             if (response) {
                 const { content, page } = response;
-                setUsers(content || []);
+                
+                // Inject mock data for UI development of Usage and Billing Health
+                const enrichedContent = (content || []).map((user, index) => {
+                    const mockMonitorLimit = user.planType === 'PRO' ? 50 : 5;
+                    const mockMonitorCount = index % 3 === 0 ? mockMonitorLimit : Math.floor(Math.random() * mockMonitorLimit);
+                    let mockBillingStatus = 'PAID';
+                    if (user.planType !== 'FREE' && index % 4 === 0) mockBillingStatus = 'OVERDUE';
+                    else if (user.planType !== 'FREE' && index % 5 === 0) mockBillingStatus = 'TRIAL';
+                    
+                    return {
+                        ...user,
+                        monitorCount: mockMonitorCount,
+                        monitorLimit: mockMonitorLimit,
+                        billingStatus: mockBillingStatus
+                    };
+                });
+
+                setUsers(enrichedContent);
                 setPagination(prev => ({
                     ...prev,
                     totalElements: page?.totalElements || 0,

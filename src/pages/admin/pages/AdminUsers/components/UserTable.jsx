@@ -1,7 +1,7 @@
 import React from 'react';
 import { getStatusBadge, getPlanBadge, formatDate } from '../utils';
 
-const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedUser, handleBlockUser, handleActiveUser, onOpenRenewal }) => {
+const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedUser, handleBlockUser, handleActiveUser, onOpenRenewal, onOpenCustomLimit }) => {
     return (
         <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
@@ -10,6 +10,7 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">User ID</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Tên & Email</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Gói</th>
+                        <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Sử dụng</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Quyền</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Trạng thái</th>
                         <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest whitespace-nowrap">Đăng nhập cuối</th>
@@ -21,7 +22,7 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                 <tbody className="divide-y divide-slate-100/80 dark:divide-slate-800">
                     {loading && (
                         <tr>
-                            <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
+                            <td colSpan="10" className="px-6 py-12 text-center text-slate-400">
                                 <div className="flex flex-col items-center gap-3">
                                     <span className="material-symbols-outlined animate-spin text-4xl text-primary">refresh</span>
                                     <p className="font-bold">Đang tải dữ liệu người dùng...</p>
@@ -31,7 +32,7 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                     )}
                     {!loading && users.length === 0 && (
                         <tr>
-                            <td colSpan="9" className="px-6 py-12 text-center text-slate-400">
+                            <td colSpan="10" className="px-6 py-12 text-center text-slate-400">
                                 <span className="material-symbols-outlined text-4xl mb-2 text-slate-300 dark:text-slate-600">group_off</span>
                                 <p className="font-bold">Không tìm thấy người dùng nào phù hợp với bộ lọc.</p>
                             </td>
@@ -60,9 +61,37 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                                 </div>
                             </td>
                             <td className="px-6 py-4 text-center">
-                                <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider shadow-sm ${getPlanBadge(user.planType)}`}>
-                                    {user.planType}
-                                </span>
+                                <div className="flex flex-col items-center gap-1.5">
+                                    <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider shadow-sm ${getPlanBadge(user.planType)}`}>
+                                        {user.planType}
+                                    </span>
+                                    {user.billingStatus === 'OVERDUE' && (
+                                        <span className="text-[9px] font-bold text-red-600 bg-red-100 dark:bg-red-900/30 px-1.5 py-0.5 rounded uppercase border border-red-200 dark:border-red-800">
+                                            Overdue
+                                        </span>
+                                    )}
+                                    {user.billingStatus === 'TRIAL' && (
+                                        <span className="text-[9px] font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/30 px-1.5 py-0.5 rounded uppercase border border-blue-200 dark:border-blue-800">
+                                            Trial
+                                        </span>
+                                    )}
+                                </div>
+                            </td>
+                            <td className="px-6 py-4">
+                                <div className="flex flex-col gap-1 w-24 mx-auto">
+                                    <div className="flex justify-between text-[10px] font-bold text-slate-500">
+                                        <span>Monitors</span>
+                                        <span className={user.monitorCount >= user.monitorLimit ? 'text-red-500' : 'text-slate-700 dark:text-slate-300'}>
+                                            {user.monitorCount}/{user.monitorLimit}
+                                        </span>
+                                    </div>
+                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                        <div 
+                                            className={`h-1.5 rounded-full ${user.monitorCount >= user.monitorLimit ? 'bg-red-500' : 'bg-emerald-500'}`}
+                                            style={{ width: `${Math.min(100, (user.monitorCount / user.monitorLimit) * 100)}%` }}
+                                        ></div>
+                                    </div>
+                                </div>
                             </td>
                             <td className="px-6 py-4 text-center">
                                 <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'} shadow-sm`}>
@@ -163,6 +192,18 @@ const UserTable = ({ users, loading, activeMenuId, setActiveMenuId, setSelectedU
                                             >
                                                 <span className="material-symbols-outlined text-[18px]">workspace_premium</span>
                                                 Gia hạn gói cước
+                                            </button>
+
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    if(onOpenCustomLimit) onOpenCustomLimit(user);
+                                                    setActiveMenuId(null);
+                                                }}
+                                                className="w-full px-4 py-2.5 text-left text-sm font-bold flex items-center gap-3 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors"
+                                            >
+                                                <span className="material-symbols-outlined text-[18px]">tune</span>
+                                                Thay đổi giới hạn
                                             </button>
 
                                             <button
