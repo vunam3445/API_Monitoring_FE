@@ -51,46 +51,11 @@ export const useAdminMonitors = (initialFilters = {}) => {
 
             const response = await adminMonitorService.getMonitors(params);
             
-            const mockMonitor = {
-                id: 'mock-1234-5678-90ab-cdef12345678',
-                name: 'Payment Gateway API',
-                url: 'https://api.example.com/v1/charge',
-                method: 'POST',
-                lastStatus: 'UP',
-                lastLatencyMs: 142,
-                uptimePercentage: 99.98,
-                isActive: true,
-                adminPaused: false,
-                sparkline: [80, 90, 85, 95, 100, 98, 99, 100, 95, 90, 85, 90, 100, 100, 100, 98, 95, 99, 100, 98, 100, 99, 100, 100],
-                user: {
-                    username: 'acmecorp_admin',
-                    subscriptionPlan: 'PRO'
-                }
-            };
-
-            const mockMonitorPaused = {
-                id: 'mock-admin-paused-5678-90ab',
-                name: 'Spammy Webhook API',
-                url: 'https://api.spammy.com/v1/trigger',
-                method: 'GET',
-                lastStatus: 'DOWN',
-                lastLatencyMs: null,
-                uptimePercentage: 45.20,
-                isActive: false,
-                adminPaused: true,
-                sparkline: [100, 100, 0, 0, 50, 0, 0, 0, 100, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-                user: {
-                    username: 'free_user_99',
-                    subscriptionPlan: 'FREE'
-                }
-            };
-            
-            // Inject mock monitor for UI viewing purposes
-            setMonitors([mockMonitor, mockMonitorPaused, ...(response.content || [])]);
+            setMonitors(response.content || []);
             setPagination(prev => ({
                 ...prev,
-                totalElements: response.totalElements || 0,
-                totalPages: response.totalPages || 0
+                totalElements: response.page?.totalElements || response.totalElements || 0,
+                totalPages: response.page?.totalPages || response.totalPages || 0
             }));
         } catch (error) {
             console.error('Failed to fetch monitors:', error);
@@ -107,7 +72,8 @@ export const useAdminMonitors = (initialFilters = {}) => {
             setStats({
                 total: response.totalMonitors || 0,
                 active: response.activeMonitors || 0,
-                down: response.downMonitors || 0
+                down: response.downMonitors || 0,
+                platformCapacity: response.platformCapacity || 0
             });
         } catch (error) {
             console.warn('Monitor stats endpoint not available');
@@ -131,18 +97,19 @@ export const useAdminMonitors = (initialFilters = {}) => {
         setPagination(prev => ({ ...prev, page: newPage }));
     };
 
-    const handleToggleActive = async (id, currentAdminPaused) => {
+    const handleToggleActive = async (id, currentIsBlock) => {
         // Cập nhật UI ngay lập tức (optimistic update) TRƯỚC khi gọi API
-        setMonitors(prev => prev.map(m => m.id === id ? { ...m, adminPaused: !currentAdminPaused } : m));
+        setMonitors(prev => prev.map(m => m.id === id ? { ...m, isBlock: !currentIsBlock, adminPaused: !currentIsBlock } : m));
         try {
-            // TODO: Call the real admin endpoint for lock/unlock
-            // await adminMonitorService.toggleAdminPause(id);
-            toastRef.current('success', `Monitor ${!currentAdminPaused ? 'đã khóa (LOCKED)' : 'đã mở khóa (UNLOCKED)'} thành công`);
+            const isBlocked = await adminMonitorService.blockMonitor(id);
+            toastRef.current('success', `Monitor ${isBlocked ? 'đã khóa (LOCKED)' : 'đã mở khóa (UNLOCKED)'} thành công`);
+            // Cập nhật lại UI dựa trên kết quả trả về từ API
+            setMonitors(prev => prev.map(m => m.id === id ? { ...m, isBlock: isBlocked, adminPaused: isBlocked } : m));
         } catch (error) {
             console.error('Failed to toggle monitor admin lock status:', error);
-            toastRef.current('error', error.message || 'Không thể cập nhật trạng thái khóa monitor');
+            toastRef.current('error', error.response?.data?.message || error.message || 'Không thể cập nhật trạng thái khóa monitor');
             // Revert lại trạng thái cũ nếu API thất bại
-            setMonitors(prev => prev.map(m => m.id === id ? { ...m, adminPaused: currentAdminPaused } : m));
+            setMonitors(prev => prev.map(m => m.id === id ? { ...m, isBlock: currentIsBlock, adminPaused: currentIsBlock } : m));
         }
     };
 

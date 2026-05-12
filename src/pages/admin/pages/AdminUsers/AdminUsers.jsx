@@ -123,17 +123,19 @@ const AdminUsers = () => {
                     />
 
                     {/* User Table and Pagination wrapper */}
-                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative z-10">
-                        <UserTable
-                            users={users}
-                            loading={loading}
-                            activeMenuId={activeMenuId}
-                            setActiveMenuId={setActiveMenuId}
-                            setSelectedUser={setSelectedUser}
-                            handleBlockUser={handleBlockUser}
-                            handleActiveUser={handleActiveUser}
-                            onOpenRenewal={(user) => setRenewalModal({ isOpen: true, user })}
-                        />
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative z-10 min-h-[700px] flex flex-col justify-between">
+                        <div className="flex-1">
+                            <UserTable
+                                users={users}
+                                loading={loading}
+                                activeMenuId={activeMenuId}
+                                setActiveMenuId={setActiveMenuId}
+                                setSelectedUser={setSelectedUser}
+                                handleBlockUser={handleBlockUser}
+                                handleActiveUser={handleActiveUser}
+                                onOpenRenewal={(user) => setRenewalModal({ isOpen: true, user })}
+                            />
+                        </div>
 
                         <UserPagination
                             pagination={pagination}

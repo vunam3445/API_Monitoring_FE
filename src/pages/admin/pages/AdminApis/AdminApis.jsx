@@ -74,6 +74,7 @@ const AdminApis = () => {
                     <MonitorDetails
                         monitor={selectedMonitor}
                         onClose={() => setSelectedMonitorId(null)}
+                        onToggleActive={handleToggleActive}
                     />
                 )}
             </div>

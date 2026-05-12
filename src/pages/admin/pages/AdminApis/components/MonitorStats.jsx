@@ -6,7 +6,13 @@ const MonitorStats = ({ stats, isLoading }) => {
         { label: 'Total Monitors', value: stats.total, color: 'text-slate-800 dark:text-slate-100' },
         { label: 'Active Monitors', value: stats.active, color: 'text-slate-800 dark:text-slate-100' },
         { label: 'Monitors Down', value: stats.down, color: 'text-red-500' },
-        { label: 'Platform Capacity', value: stats.total ? Math.round((stats.total / 1000) * 100) + '%' : '0%', color: 'text-blue-500', isPercent: true }
+        { 
+            label: 'Platform Capacity', 
+            value: stats.platformCapacity != null ? (stats.platformCapacity * 100).toFixed(2) + '%' : '0%', 
+            color: 'text-blue-500', 
+            isPercent: true,
+            note: 'Tải hệ thống hiện tại'
+        }
     ];
 
     return (
@@ -23,7 +29,7 @@ const MonitorStats = ({ stats, isLoading }) => {
                                     {stat.isPercent ? stat.value : (stat.value || 0).toLocaleString()}
                                 </h3>
                                 {stat.isPercent && (
-                                    <span className="text-[10px] font-semibold text-slate-400 block mt-1">Of 1,000 slots</span>
+                                    <span className="text-[10px] font-semibold text-slate-400 block mt-1">{stat.note || 'Of capacity'}</span>
                                 )}
                             </div>
                         )}

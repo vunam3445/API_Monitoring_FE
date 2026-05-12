@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MonitorDetails = ({ monitor, onClose }) => {
+const MonitorDetails = ({ monitor, onClose, onToggleActive }) => {
     if (!monitor) return null;
 
     const infoGroups = [
@@ -86,8 +86,18 @@ const MonitorDetails = ({ monitor, onClose }) => {
             </div>
             
             <div className="p-4 border-t border-slate-100 dark:border-slate-800">
-                <button className="w-full py-2.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-xs font-bold hover:opacity-90 transition-opacity">
-                    Pause Monitoring
+                <button 
+                    onClick={() => onToggleActive?.(monitor.id, monitor.isBlock)}
+                    className={`w-full py-2.5 flex items-center justify-center gap-2 rounded-xl text-xs font-bold transition-opacity hover:opacity-90 shadow-lg ${
+                        !monitor.isBlock 
+                            ? 'bg-red-500 text-white shadow-red-500/20' 
+                            : 'bg-emerald-500 text-white shadow-emerald-500/20'
+                    }`}
+                >
+                    <span className="material-symbols-outlined text-[16px]">
+                        {!monitor.isBlock ? 'lock' : 'lock_open'}
+                    </span>
+                    {!monitor.isBlock ? 'KHÓA API (FORCE PAUSE)' : 'MỞ KHÓA API (RESUME)'}
                 </button>
             </div>
         </aside>

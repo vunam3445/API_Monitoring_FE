@@ -37,6 +37,14 @@ export const adminMonitorService = {
     },
 
     /**
+     * Block/unblock a monitor as an admin
+     * @param {string} id - Monitor UUID
+     */
+    blockMonitor: async (id) => {
+        return apiClient.put(`/api/v1/admin/monitors/${id}/block`);
+    },
+
+    /**
      * Delete an API monitor endpoint
      * @param {string} id - API UUID
      */

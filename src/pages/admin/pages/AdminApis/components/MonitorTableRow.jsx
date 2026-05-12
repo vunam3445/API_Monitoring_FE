@@ -83,10 +83,7 @@ const MonitorTableRow = ({ monitor, isSelected, onClick, onToggleActive, onDelet
             <td className="px-6 py-4">
                 <div className="flex flex-col">
                     <span className="text-sm font-bold text-slate-800 dark:text-slate-200">
-                        {monitor.user?.username || 'Unknown'}
-                    </span>
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">
-                        {monitor.user?.subscriptionPlan || 'FREE'} PLAN
+                        {monitor.ownerName || monitor.user?.username || 'Unknown'}
                     </span>
                 </div>
             </td>
@@ -105,7 +102,7 @@ const MonitorTableRow = ({ monitor, isSelected, onClick, onToggleActive, onDelet
                 </div>
             </td>
             <td className="px-6 py-4">
-                {monitor.adminPaused ? (
+                {monitor.isBlock ? (
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold text-red-600 bg-red-100 dark:bg-red-900/30 flex items-center gap-1 w-fit border border-red-200 dark:border-red-800">
                         <span className="material-symbols-outlined text-[12px]">lock</span> LOCKED
                     </span>
@@ -121,18 +118,18 @@ const MonitorTableRow = ({ monitor, isSelected, onClick, onToggleActive, onDelet
                     <button
                         type="button"
                         role="switch"
-                        aria-checked={!monitor.adminPaused}
+                        aria-checked={!monitor.isBlock}
                         onClick={(e) => {
                             e.stopPropagation();
-                            onToggleActive(monitor.id, monitor.adminPaused);
+                            onToggleActive(monitor.id, monitor.isBlock);
                         }}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 ${!monitor.adminPaused ? 'bg-orange-500' : 'bg-red-500'}`}
-                        title={!monitor.adminPaused ? 'Lock Monitor (Force Pause)' : 'Unlock Monitor'}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500/50 ${!monitor.isBlock ? 'bg-orange-500' : 'bg-red-500'}`}
+                        title={!monitor.isBlock ? 'Lock Monitor (Force Pause)' : 'Unlock Monitor'}
                     >
                         <span
-                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${!monitor.adminPaused ? 'translate-x-[18px]' : 'translate-x-[3px]'}`}
+                            className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${!monitor.isBlock ? 'translate-x-[18px]' : 'translate-x-[3px]'}`}
                         />
-                        {monitor.adminPaused && (
+                        {monitor.isBlock && (
                             <span className="material-symbols-outlined absolute text-[10px] text-white top-1/2 right-[5px] -translate-y-1/2">lock</span>
                         )}
                     </button>
