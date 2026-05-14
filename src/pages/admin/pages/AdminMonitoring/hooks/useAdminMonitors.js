@@ -5,9 +5,21 @@ import { useToast } from '../../../../../components/UI/Toast/ToastContext';
 export const useAdminMonitors = () => {
     const [monitors, setMonitors] = useState([]);
     const [stats, setStats] = useState(null);
+    const [charts, setCharts] = useState({
+        responseTime: null,
+        uptime: null,
+        methods: null
+    });
+    const [isGlobalPaused, setIsGlobalPaused] = useState(false);
+    const [timeRange, setTimeRange] = useState('1d');
+    const [systemHealth, setSystemHealth] = useState(null);
+    
     const [loading, setLoading] = useState(false);
     const [loadingStats, setLoadingStats] = useState(false);
+    const [loadingCharts, setLoadingCharts] = useState(false);
+    const [loadingActions, setLoadingActions] = useState(false);
     const toast = useToast();
+    
     const [pagination, setPagination] = useState({
         page: 0,
         size: 10,
@@ -43,14 +55,40 @@ export const useAdminMonitors = () => {
     const fetchStats = useCallback(async () => {
         setLoadingStats(true);
         try {
-            const response = await adminMonitorService.getMonitorStats();
-            if (response) {
-                setStats(response);
-            }
+            const [statsRes, statusRes, healthRes] = await Promise.all([
+                adminMonitorService.getDashboardStats(),
+                adminMonitorService.getSystemStatus(),
+                adminMonitorService.getSystemHealth()
+            ]);
+            
+            if (statsRes) setStats(statsRes);
+            if (statusRes) setIsGlobalPaused(statusRes.isGlobalPaused);
+            if (healthRes) setSystemHealth(healthRes);
         } catch (error) {
-            console.error('Failed to fetch monitor stats:', error);
+            console.error('Failed to fetch dashboard stats:', error);
         } finally {
             setLoadingStats(false);
+        }
+    }, []);
+
+    const fetchCharts = useCallback(async (range) => {
+        setLoadingCharts(true);
+        try {
+            const [responseTime, uptime, methods] = await Promise.all([
+                adminMonitorService.getResponseTimeChart(range),
+                adminMonitorService.getUptimeChart(range),
+                adminMonitorService.getMethodDistributionChart(range)
+            ]);
+            
+            setCharts({
+                responseTime,
+                uptime,
+                methods
+            });
+        } catch (error) {
+            console.error('Failed to fetch dashboard charts:', error);
+        } finally {
+            setLoadingCharts(false);
         }
     }, []);
 
@@ -61,6 +99,10 @@ export const useAdminMonitors = () => {
     useEffect(() => {
         fetchStats();
     }, [fetchStats]);
+
+    useEffect(() => {
+        fetchCharts(timeRange);
+    }, [fetchCharts, timeRange]);
 
     const handlePageChange = (newPage) => {
         setPagination(prev => ({ ...prev, page: newPage }));
@@ -77,17 +119,63 @@ export const useAdminMonitors = () => {
         }
     };
 
+    const handleToggleGlobalPause = async () => {
+        if (loadingActions) return;
+        setLoadingActions(true);
+        try {
+            const nextStatus = !isGlobalPaused;
+            const response = await adminMonitorService.toggleGlobalPause(nextStatus);
+            if (response.success) {
+                setIsGlobalPaused(response.isPaused);
+                toast.success(response.message || `Đã ${response.isPaused ? 'tạm dừng' : 'kích hoạt'} giám sát toàn cục`);
+            }
+        } catch (error) {
+            console.error('Failed to toggle global pause:', error);
+            toast.error('Không thể thực hiện thao tác');
+        } finally {
+            setLoadingActions(false);
+        }
+    };
+
+    const handleFlushQueue = async () => {
+        if (loadingActions) return;
+        setLoadingActions(true);
+        try {
+            const response = await adminMonitorService.flushQueue();
+            if (response.success) {
+                toast.success(response.message || 'Đã xóa sạch hàng đợi thành công');
+            }
+        } catch (error) {
+            console.error('Failed to flush queue:', error);
+            toast.error('Không thể xóa hàng đợi');
+        } finally {
+            setLoadingActions(false);
+        }
+    };
+
+    const refresh = () => {
+        fetchMonitors();
+        fetchStats();
+        fetchCharts(timeRange);
+    };
+
     return {
         monitors,
         stats,
+        charts,
+        systemHealth,
+        isGlobalPaused,
+        timeRange,
+        setTimeRange,
         loading,
         loadingStats,
+        loadingCharts,
+        loadingActions,
         pagination,
         handlePageChange,
         handleToggleBlock,
-        refresh: () => {
-            fetchMonitors();
-            fetchStats();
-        }
+        handleToggleGlobalPause,
+        handleFlushQueue,
+        refresh
     };
 };

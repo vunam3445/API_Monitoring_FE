@@ -22,10 +22,52 @@ export const adminMonitorService = {
     },
 
     /**
-     * Get summary statistics for monitors
+     * Get summary statistics for dashboard
      */
-    getMonitorStats: async () => {
-        return apiClient.get('/api/v1/admin/monitors/stats');
+    getDashboardStats: async () => {
+        return apiClient.get('/api/v1/admin/dashboard/stats');
+    },
+
+    /**
+     * Get response time trend chart data
+     */
+    getResponseTimeChart: async (range = '1d') => {
+        return apiClient.get('/api/v1/admin/dashboard/charts/response-time', { params: { range } });
+    },
+
+    /**
+     * Get global uptime chart data
+     */
+    getUptimeChart: async (range = '1d') => {
+        return apiClient.get('/api/v1/admin/dashboard/charts/uptime', { params: { range } });
+    },
+
+    /**
+     * Get HTTP method distribution chart data
+     */
+    getMethodDistributionChart: async (range = '1d') => {
+        return apiClient.get('/api/v1/admin/dashboard/charts/methods', { params: { range } });
+    },
+
+    /**
+     * Toggle global monitoring pause
+     */
+    toggleGlobalPause: async (pause) => {
+        return apiClient.post('/api/v1/admin/dashboard/actions/pause', { pause });
+    },
+
+    /**
+     * Flush job queue
+     */
+    flushQueue: async () => {
+        return apiClient.post('/api/v1/admin/dashboard/actions/flush-queue');
+    },
+
+    /**
+     * Get system status (pause status)
+     */
+    getSystemStatus: async () => {
+        return apiClient.get('/api/v1/admin/dashboard/system-status');
     },
 
     /**
@@ -50,5 +92,12 @@ export const adminMonitorService = {
      */
     deleteMonitor: async (id) => {
         return apiClient.delete(`/api/Apis/${id}`);
+    },
+
+    /**
+     * Get system health metrics (CPU, RAM, Disk, Queue)
+     */
+    getSystemHealth: async () => {
+        return apiClient.get('/api/v1/dashboard/system-health');
     }
 };

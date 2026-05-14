@@ -6,3 +6,12 @@
   --color-background-dark: #221610;
   --font-display: "Public Sans", sans-serif;
 }
+
+@keyframes shimmer {
+  from { background-position: 0 0; }
+  to { background-position: 40px 0; }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s linear infinite;
+}

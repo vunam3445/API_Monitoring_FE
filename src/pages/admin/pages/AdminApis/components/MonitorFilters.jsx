@@ -23,14 +23,14 @@ const MonitorFilters = ({ filters, onFilterChange }) => {
                     placeholder="Search monitor name, URL..."
                 />
             </div>
-            
+
             <select
                 value={filters.lastStatus}
                 onChange={(e) => onFilterChange({ lastStatus: e.target.value })}
                 className="bg-slate-50 dark:bg-slate-800 border-none rounded-xl px-4 py-2.5 text-sm focus:ring-2 focus:ring-orange-500/50"
             >
                 <option value="">All Statuses</option>
-                <option value="UP">Healthy (UP)</option>
+                <option value="HEALTHY">Healthy (UP)</option>
                 <option value="WARNING">Degraded (WARNING)</option>
                 <option value="DOWN">Down (DOWN)</option>
             </select>

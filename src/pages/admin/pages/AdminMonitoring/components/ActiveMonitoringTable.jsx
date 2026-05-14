@@ -2,7 +2,6 @@ import React from 'react';
 import { formatDate } from '../utils';
 
 const ActiveMonitoringTable = ({ monitors = [], loading = false, onSelectMonitor, onToggleBlock }) => {
-    console.log("DEBUG - Dữ liệu Monitors nhận được:", monitors);
 
     return (
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
@@ -43,18 +42,17 @@ const ActiveMonitoringTable = ({ monitors = [], loading = false, onSelectMonitor
                                 </td>
                             </tr>
                         ) : monitors.map((monitor) => (
-                            <tr 
-                                key={monitor.id} 
+                            <tr
+                                key={monitor.id}
                                 onClick={() => onSelectMonitor?.(monitor)}
                                 className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors cursor-pointer group"
                             >
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold shadow-sm ${
-                                            monitor.lastStatus === 'DOWN' 
-                                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' 
+                                        <div className={`w-8 h-8 rounded flex items-center justify-center text-xs font-bold shadow-sm ${monitor.lastStatus === 'DOWN'
+                                            ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
                                             : 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
-                                        }`}>
+                                            }`}>
                                             {monitor.name?.substring(0, 2).toUpperCase() || 'API'}
                                         </div>
                                         <div>
@@ -79,29 +77,25 @@ const ActiveMonitoringTable = ({ monitors = [], loading = false, onSelectMonitor
                                     </div>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                        monitor.method === 'GET' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${monitor.method === 'GET' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600' :
                                         monitor.method === 'POST' ? 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600' :
-                                        'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                                    }`}>
+                                            'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                                        }`}>
                                         {monitor.method}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <span className={`flex items-center gap-1.5 text-xs font-bold ${
-                                        monitor.lastStatus === 'HEALTHY' ? 'text-emerald-600' :
+                                    <span className={`flex items-center gap-1.5 text-xs font-bold ${monitor.lastStatus === 'HEALTHY' ? 'text-emerald-600' :
                                         monitor.lastStatus === 'DOWN' ? 'text-red-600' : 'text-amber-600'
-                                    }`}>
-                                        <span className={`w-2 h-2 rounded-full ${
-                                            monitor.lastStatus === 'HEALTHY' ? 'bg-emerald-500' :
+                                        }`}>
+                                        <span className={`w-2 h-2 rounded-full ${monitor.lastStatus === 'HEALTHY' ? 'bg-emerald-500' :
                                             monitor.lastStatus === 'DOWN' ? 'bg-red-500' : 'bg-amber-500'
-                                        }`}></span> 
+                                            }`}></span>
                                         {monitor.lastStatus || 'Unknown'}
                                     </span>
                                 </td>
-                                <td className={`px-6 py-4 text-sm font-bold ${
-                                    (monitor.lastLatencyMs || 0) > monitor.maxResponseTimeMs ? 'text-amber-600' : 'text-slate-600 dark:text-slate-300'
-                                }`}>
+                                <td className={`px-6 py-4 text-sm font-bold ${(monitor.lastLatencyMs || 0) > monitor.maxResponseTimeMs ? 'text-amber-600' : 'text-slate-600 dark:text-slate-300'
+                                    }`}>
                                     {monitor.lastLatencyMs ? `${monitor.lastLatencyMs}ms` : '--'}
                                 </td>
                                 <td className="px-6 py-4 text-sm font-medium text-slate-900 dark:text-white">
@@ -109,19 +103,19 @@ const ActiveMonitoringTable = ({ monitors = [], loading = false, onSelectMonitor
                                 </td>
                                 <td className="px-6 py-4 text-right">
                                     <div className="flex justify-end gap-2">
-                                        <button 
+                                        <button
                                             onClick={(e) => { e.stopPropagation(); onSelectMonitor?.(monitor); }}
                                             className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors text-slate-400 hover:text-primary"
                                         >
                                             <span className="material-symbols-outlined text-sm">visibility</span>
                                         </button>
-                                        <button 
+                                        <button
                                             type="button"
                                             role="switch"
                                             aria-checked={!monitor.isBlock}
-                                            onClick={(e) => { 
-                                                e.stopPropagation(); 
-                                                onToggleBlock?.(monitor.id); 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                onToggleBlock?.(monitor.id);
                                             }}
                                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none ${!monitor.isBlock ? 'bg-emerald-500' : 'bg-red-500'}`}
                                             title={monitor.isBlock ? "Mở khóa API" : "Khóa API"}

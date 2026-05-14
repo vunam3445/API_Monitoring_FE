@@ -6,10 +6,10 @@ const MonitorStats = ({ stats, isLoading }) => {
         { label: 'Total Monitors', value: stats.total, color: 'text-slate-800 dark:text-slate-100' },
         { label: 'Active Monitors', value: stats.active, color: 'text-slate-800 dark:text-slate-100' },
         { label: 'Monitors Down', value: stats.down, color: 'text-red-500' },
-        { 
-            label: 'Platform Capacity', 
-            value: stats.platformCapacity != null ? (stats.platformCapacity * 100).toFixed(2) + '%' : '0%', 
-            color: 'text-blue-500', 
+        {
+            label: 'Platform Capacity',
+            value: stats.platformCapacity != null ? (stats.platformCapacity).toFixed(2) + '%' : '0%',
+            color: 'text-blue-500',
             isPercent: true,
             note: 'Tải hệ thống hiện tại'
         }
