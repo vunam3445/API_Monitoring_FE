@@ -1,51 +1,51 @@
 import React from 'react';
 
-const DashboardStats = () => {
+const DashboardStats = ({ statsData }) => {
     const stats = [
         {
             label: 'Total Revenue (MRR)',
-            value: '$98.5k',
-            trend: '+8%',
-            trendUp: true,
+            value: statsData?.revenue?.value || '$0',
+            trend: statsData?.revenue?.trend || '0%',
+            trendUp: statsData?.revenue?.trendUp ?? true,
             icon: 'payments',
             color: 'emerald',
             link: '/admin/revenue'
         },
         {
             label: 'Total Users',
-            value: '14,289',
-            subValue: '+124 today',
-            trend: '+12%',
-            trendUp: true,
+            value: statsData?.totalUsers?.value || '0',
+            subValue: statsData?.totalUsers?.subValue || 'Total Registered',
+            trend: statsData?.totalUsers?.trend || '0%',
+            trendUp: statsData?.totalUsers?.trendUp ?? true,
             icon: 'group',
             color: 'blue',
             link: '/admin/users'
         },
         {
             label: 'APIs Monitored',
-            value: '156',
-            subValue: '154 Online',
-            trend: 'Stable',
-            trendUp: true,
+            value: statsData?.apisMonitored?.value || '0',
+            subValue: statsData?.apisMonitored?.subValue || 'Active Monitors',
+            trend: statsData?.apisMonitored?.trend || '0%',
+            trendUp: statsData?.apisMonitored?.trendUp ?? true,
             icon: 'hub',
             color: 'purple',
             link: '/admin/monitoring'
         },
         {
             label: 'APIs Down',
-            value: '2',
-            subValue: 'Action Required',
-            trend: '+2',
-            trendUp: false,
+            value: statsData?.apisDown?.value || '0',
+            subValue: statsData?.apisDown?.subValue || 'Critical Issues',
+            trend: statsData?.apisDown?.trend || '0',
+            trendUp: statsData?.apisDown?.trendUp ?? false,
             icon: 'error',
             color: 'red',
             link: '/admin/monitoring'
         },
         {
             label: 'Alerts Today',
-            value: '28',
-            trend: '-15%',
-            trendUp: true,
+            value: statsData?.alertsToday?.value || '0',
+            trend: statsData?.alertsToday?.trend || '0%',
+            trendUp: statsData?.alertsToday?.trendUp ?? false,
             icon: 'warning',
             color: 'amber',
             link: '/admin/monitoring'
@@ -66,14 +66,14 @@ const DashboardStats = () => {
                         </div>
                         <span className={`${stat.trendUp ? 'text-emerald-500' : 'text-red-500'} text-xs font-bold flex items-center`}>
                             {stat.trend} 
-                            <span className="material-symbols-outlined text-sm">
+                            <span className="material-symbols-outlined text-sm ml-0.5">
                                 {stat.trend === 'Stable' ? 'check_circle' : (stat.trendUp ? 'trending_up' : 'trending_down')}
                             </span>
                         </span>
                     </div>
                     <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">{stat.label}</p>
                     <div className="flex items-baseline gap-2 mt-1">
-                        <p className={`text-2xl font-bold ${stat.color === 'red' ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
+                        <p className={`text-2xl font-bold ${stat.color === 'red' && parseInt(stat.value) > 0 ? 'text-red-500' : 'text-slate-800 dark:text-slate-100'}`}>
                             {stat.value}
                         </p>
                         {stat.subValue && <span className="text-[10px] text-slate-400 font-medium">{stat.subValue}</span>}

@@ -52,11 +52,11 @@ export const useAdminMonitors = () => {
         }
     }, [pagination.page, pagination.size, toast]);
 
-    const fetchStats = useCallback(async () => {
+    const fetchStats = useCallback(async (range) => {
         setLoadingStats(true);
         try {
             const [statsRes, statusRes, healthRes] = await Promise.all([
-                adminMonitorService.getDashboardStats(),
+                adminMonitorService.getDashboardStats(range),
                 adminMonitorService.getSystemStatus(),
                 adminMonitorService.getSystemHealth()
             ]);
@@ -97,8 +97,8 @@ export const useAdminMonitors = () => {
     }, [fetchMonitors]);
 
     useEffect(() => {
-        fetchStats();
-    }, [fetchStats]);
+        fetchStats(timeRange);
+    }, [fetchStats, timeRange]);
 
     useEffect(() => {
         fetchCharts(timeRange);
@@ -155,7 +155,7 @@ export const useAdminMonitors = () => {
 
     const refresh = () => {
         fetchMonitors();
-        fetchStats();
+        fetchStats(timeRange);
         fetchCharts(timeRange);
     };
 

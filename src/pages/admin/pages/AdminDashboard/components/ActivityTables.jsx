@@ -1,8 +1,22 @@
 import React from 'react';
 
-const ActivityTables = () => {
+const ActivityTables = ({ activityData }) => {
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'HEALTHY':
+                return <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-wider uppercase">HEALTHY</span>;
+            case 'TIMEOUT':
+                return <span className="px-2.5 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold tracking-wider uppercase">TIMEOUT</span>;
+            case 'ERROR':
+                return <span className="px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold tracking-wider uppercase">ERROR</span>;
+            default:
+                return <span className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold tracking-wider uppercase">{status}</span>;
+        }
+    };
+
     return (
         <div className="space-y-6">
+            {/* Latest API Activity Table */}
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden text-slate-800 dark:text-slate-100">
                 <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900">
                     <h2 className="text-lg font-bold">Latest API Activity</h2>
@@ -21,31 +35,34 @@ const ActivityTables = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm">
-                            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td className="px-6 py-4 font-semibold">Stripe Connect</td>
-                                <td className="px-6 py-4">Finance Team</td>
-                                <td className="px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">/v1/payouts</td>
-                                <td className="px-6 py-4 font-medium">182ms</td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold tracking-wider uppercase">HEALTHY</span>
-                                </td>
-                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400">2 mins ago</td>
-                            </tr>
-                            <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td className="px-6 py-4 font-semibold">Search Engine Core</td>
-                                <td className="px-6 py-4">Platform Engineering</td>
-                                <td className="px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400">/api/v2/query</td>
-                                <td className="px-6 py-4 font-medium">490ms</td>
-                                <td className="px-6 py-4">
-                                    <span className="px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 text-[10px] font-bold tracking-wider uppercase">TIMEOUT</span>
-                                </td>
-                                <td className="px-6 py-4 text-slate-500 dark:text-slate-400">5 mins ago</td>
-                            </tr>
+                            {activityData && activityData.length > 0 ? (
+                                activityData.map((activity, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-6 py-4 font-semibold">{activity.apiName}</td>
+                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{activity.owner}</td>
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-500 dark:text-slate-400 max-w-[200px] truncate" title={activity.endpoint}>
+                                            {activity.endpoint}
+                                        </td>
+                                        <td className="px-6 py-4 font-medium">{activity.responseTime}</td>
+                                        <td className="px-6 py-4">
+                                            {getStatusBadge(activity.status)}
+                                        </td>
+                                        <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{activity.lastCheck}</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-10 text-center text-slate-400 italic">
+                                        No recent activity found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
+            {/* Recent Alerts Table - MOCK (Keeping as requested) */}
             <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden text-slate-800 dark:text-slate-100">
                 <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2 bg-slate-50/50 dark:bg-slate-900">
                     <span className="material-symbols-outlined text-amber-500 animate-pulse">emergency</span>

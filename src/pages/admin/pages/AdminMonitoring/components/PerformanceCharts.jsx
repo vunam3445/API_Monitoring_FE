@@ -14,8 +14,15 @@ const PerformanceCharts = ({ charts, stats, loading }) => {
     const responseTimeData = charts?.responseTime?.points || [];
 
     // Calculate Error Rate from stats
-    const totalApis = stats?.totalApis || 0;
-    const down = stats?.down || 0;
+    const getStatValue = (statObj) => {
+        if (typeof statObj === 'object' && statObj !== null) {
+            return Number(statObj.value) || 0;
+        }
+        return Number(statObj) || 0;
+    };
+    
+    const totalApis = getStatValue(stats?.totalApis);
+    const down = getStatValue(stats?.downApis ?? stats?.down);
     const errorRate = totalApis > 0 ? (down / totalApis) * 100 : 0;
 
     return (

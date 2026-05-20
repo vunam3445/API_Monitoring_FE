@@ -55,7 +55,6 @@ export const useAlerts = (initialPageSize = 10) => {
             const response = await alertService.getSummary(filters.range);
             // Handle both { data: {...} } and direct {...} response structures
             const summaryData = response?.data || response;
-            console.log('Alert Summary Data:', summaryData);
             setSummary(summaryData);
         } catch (err) {
             console.error('Failed to fetch summary:', err);

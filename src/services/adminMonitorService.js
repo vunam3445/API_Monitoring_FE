@@ -24,8 +24,8 @@ export const adminMonitorService = {
     /**
      * Get summary statistics for dashboard
      */
-    getDashboardStats: async () => {
-        return apiClient.get('/api/v1/admin/dashboard/stats');
+    getDashboardStats: async (range = '1d') => {
+        return apiClient.get('/api/v1/admin/dashboard/stats', { params: { range } });
     },
 
     /**
