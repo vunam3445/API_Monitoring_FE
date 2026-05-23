@@ -77,5 +77,17 @@ export const apiEndpointService = {
    */
   retryApi: async (id) => {
     return apiClient.post(`/api/Apis/${id}/retry`);
+  },
+
+  /**
+   * Export uptime logs to CSV
+   * @param {object} params - { from, to } using exact ISO 8601 formatting (YYYY-MM-DDTHH:mm:ss)
+   */
+  exportLogs: async ({ from, to } = {}) => {
+    let url = `/api/uptime-logs/export`;
+    if (from && to) {
+        url += `?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`;
+    }
+    return apiClient.get(url, { responseType: 'blob' });
   }
 };

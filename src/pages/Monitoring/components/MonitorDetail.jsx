@@ -79,10 +79,17 @@ const MonitorDetail = ({ monitorId, onBack, onToggleStatus }) => {
                     <div>
                         <div className="flex items-center gap-3 mb-1.5 text-slate-900 dark:text-white">
                             <span className="text-3xl font-black tracking-tight">{(overview.baseInfo?.name) || overview.name}</span>
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-1.5 ${overview.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'}`}>
-                                <span className={`w-1.5 h-1.5 rounded-full ${overview.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                                {overview.isActive ? 'ACTIVE' : 'PAUSED'}
-                            </span>
+                            {overview.isBlock ? (
+                                <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-1.5 bg-rose-500 text-white shadow-sm">
+                                    <span className="material-symbols-outlined text-[14px]">block</span>
+                                    BLOCKED BY ADMIN
+                                </span>
+                            ) : (
+                                <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest leading-none flex items-center gap-1.5 ${overview.isActive ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400'}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${overview.isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
+                                    {overview.isActive ? 'ACTIVE' : 'PAUSED'}
+                                </span>
+                            )}
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-black text-slate-500 uppercase tracking-tighter">{overview.baseInfo?.method || 'GET'}</span>
@@ -94,17 +101,18 @@ const MonitorDetail = ({ monitorId, onBack, onToggleStatus }) => {
                 <div className="flex items-center gap-6 ml-auto bg-slate-50/50 dark:bg-slate-800/30 px-5 py-3 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm">
                     <div className="flex flex-col items-end">
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Status</span>
-                        <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${overview.isActive ? 'text-emerald-500' : 'text-slate-400'}`}>
-                            {overview.isActive ? 'Active' : 'Paused'}
+                        <span className={`text-[10px] font-black uppercase tracking-widest leading-none ${overview.isBlock ? 'text-rose-500' : overview.isActive ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {overview.isBlock ? 'Blocked' : overview.isActive ? 'Active' : 'Paused'}
                         </span>
                     </div>
                     <div className="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
                     <button
                         type="button"
                         role="switch"
+                        disabled={overview.isBlock}
                         aria-checked={overview.isActive === true}
-                        onClick={handleToggle}
-                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${overview.isActive === true ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                        onClick={() => !overview.isBlock && handleToggle()}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${overview.isBlock ? 'bg-slate-200 dark:bg-slate-800 cursor-not-allowed' : overview.isActive === true ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
                     >
                         <span
                             className={`inline-block h-4.5 w-4.5 transform rounded-full bg-white shadow-lg transition-transform duration-200 ${overview.isActive === true ? 'translate-x-[22px]' : 'translate-x-[4px]'}`}

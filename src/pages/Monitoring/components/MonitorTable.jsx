@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus }) => {
+const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus, onDelete, onEdit }) => {
     const getStatusStyle = (status) => {
         switch (status?.toUpperCase()) {
             case 'HEALTHY':
@@ -71,13 +71,23 @@ const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus 
                         {monitors.map((item) => (
                             <tr 
                                 key={item.id} 
-                                className="group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all cursor-pointer"
-                                onClick={() => onSelectMonitor({ id: item.id, name: item.name })}
+                                className={`group hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-all ${item.isBlock ? 'cursor-not-allowed opacity-60 grayscale-[0.5]' : 'cursor-pointer'}`}
+                                onClick={() => !item.isBlock && onSelectMonitor({ id: item.id, name: item.name })}
                             >
                                 <td className="px-6 py-5">
-                                    <div>
-                                        <div className="text-sm font-black text-slate-900 dark:text-white truncate max-w-xs">{item.name || 'Unnamed API'}</div>
-                                        <div className="text-[10px] font-bold text-slate-400 truncate max-w-xs mt-1 uppercase tracking-tighter opacity-60 italic">{item.url}</div>
+                                    <div className="flex items-center gap-3">
+                                        <div>
+                                            <div className="text-sm font-black text-slate-900 dark:text-white truncate max-w-xs flex items-center gap-2">
+                                                {item.name || 'Unnamed API'}
+                                                {item.isBlock && (
+                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-rose-500 text-[8px] text-white font-black uppercase tracking-tighter shadow-sm">
+                                                        <span className="material-symbols-outlined text-[10px]">block</span>
+                                                        Blocked
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-[10px] font-bold text-slate-400 truncate max-w-xs mt-1 uppercase tracking-tighter opacity-60 italic">{item.url}</div>
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-5 text-center">
@@ -91,9 +101,10 @@ const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus 
                                     <button
                                         type="button"
                                         role="switch"
+                                        disabled={item.isBlock}
                                         aria-checked={item.isActive === true}
-                                        onClick={() => onToggleStatus && onToggleStatus(item.id)}
-                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${item.isActive === true ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                        onClick={() => !item.isBlock && onToggleStatus && onToggleStatus(item.id)}
+                                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${item.isBlock ? 'bg-slate-200 dark:bg-slate-800' : item.isActive === true ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
                                     >
                                         <span
                                             className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.isActive === true ? 'translate-x-[18px]' : 'translate-x-[3px]'}`}
@@ -125,21 +136,26 @@ const MonitorTable = ({ monitors = [], loading, onSelectMonitor, onToggleStatus 
                                 <td className="px-6 py-5 text-right whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex justify-end gap-1">
                                         <button
-                                            onClick={() => onSelectMonitor({ id: item.id, name: item.name })}
-                                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-primary transition-all active:scale-90"
-                                            title="View Details"
+                                            disabled={item.isBlock}
+                                            onClick={() => !item.isBlock && onSelectMonitor({ id: item.id, name: item.name })}
+                                            className={`p-2 rounded-xl text-slate-400 transition-all ${item.isBlock ? 'opacity-20' : 'hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-primary active:scale-90'}`}
+                                            title={item.isBlock ? 'Monitor Blocked by Admin' : 'View Details'}
                                         >
                                             <span className="material-symbols-outlined text-lg">visibility</span>
                                         </button>
                                         <button
-                                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-amber-500 transition-all active:scale-90"
-                                            title="Edit Monitor"
+                                            disabled={item.isBlock}
+                                            onClick={(e) => { e.stopPropagation(); !item.isBlock && onEdit && onEdit(item); }}
+                                            className={`p-2 rounded-xl text-slate-400 transition-all ${item.isBlock ? 'opacity-20' : 'hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-amber-500 active:scale-90'}`}
+                                            title={item.isBlock ? 'Monitor Blocked by Admin' : 'Edit Monitor'}
                                         >
                                             <span className="material-symbols-outlined text-lg">edit_note</span>
                                         </button>
                                         <button
-                                            className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl text-slate-400 hover:text-rose-500 transition-all active:scale-90"
-                                            title="Delete Monitor"
+                                            disabled={item.isBlock}
+                                            onClick={(e) => { e.stopPropagation(); !item.isBlock && onDelete && onDelete(item.id); }}
+                                            className={`p-2 rounded-xl text-slate-400 transition-all ${item.isBlock ? 'opacity-20' : 'hover:bg-rose-50 dark:hover:bg-rose-900/20 hover:text-rose-500 active:scale-90'}`}
+                                            title={item.isBlock ? 'Monitor Blocked by Admin' : 'Delete Monitor'}
                                         >
                                             <span className="material-symbols-outlined text-lg">delete</span>
                                         </button>

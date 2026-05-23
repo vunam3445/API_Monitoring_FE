@@ -17,7 +17,7 @@ import AdminUsers from './pages/admin/pages/AdminUsers/AdminUsers';
 import AdminMonitoring from './pages/admin/pages/AdminMonitoring/AdminMonitoring';
 import AdminAlerts from './pages/admin/pages/AdminAlerts/AdminAlerts';
 import AdminPricingPlans from './pages/admin/pages/AdminPricingPlans/AdminPricingPlans';
-import AdminSubscriptions from './pages/admin/pages/AdminSubscriptions/AdminSubscriptions';
+
 import AdminRevenueAnalytics from './pages/admin/pages/AdminRevenueAnalytics/AdminRevenueAnalytics';
 import AdminSystemLogs from './pages/admin/pages/AdminSystemLogs/AdminSystemLogs';
 import AdminSettings from './pages/admin/pages/AdminSettings/AdminSettings';
@@ -47,7 +47,7 @@ function App() {
                 <Route path="/admin/monitoring" element={<AdminMonitoring />} />
                 <Route path="/admin/alerts" element={<AdminAlerts />} />
                 <Route path="/admin/pricing-plans" element={<AdminPricingPlans />} />
-                <Route path="/admin/subscriptions" element={<AdminSubscriptions />} />
+
                 <Route path="/admin/revenue-analytics" element={<AdminRevenueAnalytics />} />
                 <Route path="/admin/system-logs" element={<AdminSystemLogs />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />

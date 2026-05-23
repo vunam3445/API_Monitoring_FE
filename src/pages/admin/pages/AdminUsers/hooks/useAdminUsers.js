@@ -1,0 +1,158 @@
+import { useState, useEffect, useCallback } from 'react';
+import { adminUserService } from '../../../../../services/adminUserService';
+import { useToast } from '../../../../../components/UI/Toast/ToastContext';
+
+export const useAdminUsers = () => {
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const toast = useToast();
+    const [stats, setStats] = useState(null);
+    const [loadingStats, setLoadingStats] = useState(false);
+    const [pagination, setPagination] = useState({
+        page: 0,
+        size: 10,
+        totalElements: 0,
+        totalPages: 0,
+        last: true
+    });
+
+    const [filters, setFilters] = useState({
+        email: '',
+        fullName: '',
+        status: '',
+        role: '',
+        planType: '',
+        sort: 'createdAt,desc'
+    });
+
+    const fetchUsers = useCallback(async () => {
+        setLoading(true);
+        try {
+            const params = {
+                page: pagination.page,
+                size: pagination.size,
+                sort: filters.sort,
+                ...(filters.email && { email: filters.email }),
+                ...(filters.fullName && { fullName: filters.fullName }),
+                ...(filters.status && { status: filters.status }),
+                ...(filters.role && { role: filters.role }),
+                ...(filters.planType && { planType: filters.planType }),
+            };
+
+            const response = await adminUserService.getUsers(params);
+            
+            if (response) {
+                const { content, page } = response;
+                
+                // Inject mock data for UI development of Usage and Billing Health
+                const enrichedContent = (content || []).map((user, index) => {
+                    let mockBillingStatus = 'PAID';
+                    if (user.planType !== 'FREE' && index % 4 === 0) mockBillingStatus = 'OVERDUE';
+                    else if (user.planType !== 'FREE' && index % 5 === 0) mockBillingStatus = 'TRIAL';
+                    
+                    return {
+                        ...user,
+                        billingStatus: mockBillingStatus
+                    };
+                });
+
+                setUsers(enrichedContent);
+                setPagination(prev => ({
+                    ...prev,
+                    totalElements: page?.totalElements || 0,
+                    totalPages: page?.totalPages || 1,
+                    last: (page?.number >= (page?.totalPages - 1)) ?? true
+                }));
+            }
+        } catch (error) {
+            console.error('Failed to fetch users:', error);
+            toast.error('Không thể tải danh sách người dùng');
+        } finally {
+            setLoading(false);
+        }
+    }, [pagination.page, pagination.size, filters, toast]);
+
+    const fetchStats = useCallback(async () => {
+        setLoadingStats(true);
+        try {
+            const response = await adminUserService.getUserStats();
+            if (response) {
+                setStats(response);
+            }
+        } catch (error) {
+            console.error('Failed to fetch user stats:', error);
+        } finally {
+            setLoadingStats(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchUsers();
+    }, [fetchUsers]);
+
+    useEffect(() => {
+        fetchStats();
+    }, [fetchStats]);
+
+    const refreshAll = useCallback(async () => {
+        await Promise.all([fetchUsers(), fetchStats()]);
+    }, [fetchUsers, fetchStats]);
+
+    const handleBlockUser = async (userId) => {
+        try {
+            await adminUserService.blockUser(userId);
+            toast.success('Đã khóa tài khoản người dùng');
+            refreshAll();
+        } catch (error) {
+            toast.error(error.message || 'Không thể khóa tài khoản người dùng');
+        }
+    };
+
+    const handleActiveUser = async (userId) => {
+        try {
+            await adminUserService.activeUser(userId);
+            toast.success('Đã kích hoạt tài khoản người dùng');
+            refreshAll();
+        } catch (error) {
+            toast.error(error.message || 'Không thể kích hoạt tài khoản người dùng');
+        }
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 0 && newPage < pagination.totalPages) {
+            setPagination(prev => ({ ...prev, page: newPage }));
+        }
+    };
+
+    const handleFilterChange = (newFilters) => {
+        setFilters(prev => ({ ...prev, ...newFilters }));
+        setPagination(prev => ({ ...prev, page: 0 })); 
+    };
+
+    const handleManualRenewal = async (userId, data) => {
+        try {
+            await adminUserService.renewSubscriptionManual(userId, data);
+            toast.success('Gia hạn gói cước thành công');
+            refreshAll();
+            return true;
+        } catch (error) {
+            toast.error(error.message || 'Không thể gia hạn gói cước');
+            return false;
+        }
+    };
+
+    return {
+        users,
+        loading,
+        stats,
+        loadingStats,
+        pagination,
+        filters,
+        handleBlockUser,
+        handleActiveUser,
+        handleManualRenewal,
+        handlePageChange,
+        handleFilterChange,
+        refresh: refreshAll
+    };
+};

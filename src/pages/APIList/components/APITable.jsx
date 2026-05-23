@@ -119,7 +119,7 @@ const APITable = ({ apis = [], loading = false, pagination = {}, sortConfig = {}
                                 const uptimePct = typeof item.uptimePercentage === 'number' ? item.uptimePercentage : 0;
 
                                 return (
-                                    <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                                    <tr key={item.id} className={`hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group ${item.isBlock ? 'opacity-50 bg-slate-50 dark:bg-slate-800/30 grayscale pointer-events-none' : ''}`}>
                                         <td className="px-6 py-5">
                                             <div className="flex items-center gap-3">
                                                 <div className={`size-2.5 rounded-full ring-4 ${statusInfo.dotClass}`}></div>
@@ -140,20 +140,25 @@ const APITable = ({ apis = [], loading = false, pagination = {}, sortConfig = {}
                                         </td>
                                         {/* Active Toggle */}
                                         <td className="px-6 py-5 text-center">
-                                            <button
-                                                type="button"
-                                                role="switch"
-                                                aria-checked={item.isActive}
-                                                onClick={() => onToggleActive && onToggleActive(item.id, item.isActive)}
-                                                className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${item.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'
-                                                    }`}
-                                                title={item.isActive ? 'Click to pause monitor' : 'Click to activate monitor'}
-                                            >
-                                                <span
-                                                    className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.isActive ? 'translate-x-[18px]' : 'translate-x-[3px]'
-                                                        }`}
-                                                />
-                                            </button>
+                                            {item.isBlock ? (
+                                                <div className="flex items-center justify-center gap-1 text-red-600 bg-red-100 dark:bg-red-900/40 px-2 py-0.5 rounded-md border border-red-200 dark:border-red-800 w-max mx-auto">
+                                                    <span className="material-symbols-outlined text-[14px]">lock</span>
+                                                    <span className="text-[10px] font-bold">BỊ KHÓA</span>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    role="switch"
+                                                    aria-checked={item.isActive}
+                                                    onClick={() => onToggleActive && onToggleActive(item.id, item.isActive)}
+                                                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${item.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                                    title={item.isActive ? 'Click to pause monitor' : 'Click to activate monitor'}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${item.isActive ? 'translate-x-[18px]' : 'translate-x-[3px]'}`}
+                                                    />
+                                                </button>
+                                            )}
                                         </td>
                                         <td className="px-6 py-5 text-center">
                                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${statusInfo.bgClass} ${statusInfo.textClass}`}>
@@ -169,29 +174,36 @@ const APITable = ({ apis = [], loading = false, pagination = {}, sortConfig = {}
                                         </td>
 
                                         <td className="px-6 py-5 text-right whitespace-nowrap">
-                                            <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                                                <button
-                                                    onClick={() => onView && onView(item)}
-                                                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
-                                                    title="View Details"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">visibility</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => onEdit && onEdit(item)}
-                                                    className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
-                                                    title="Edit Properties"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm">edit</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => onDelete && onDelete(item.id)}
-                                                    className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-500 transition-colors group/del"
-                                                    title="Delete API Endpoint"
-                                                >
-                                                    <span className="material-symbols-outlined text-sm group-hover/del:scale-110 transition-transform">delete</span>
-                                                </button>
-                                            </div>
+                                            {item.isBlock ? (
+                                                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest flex justify-end items-center gap-1">
+                                                    <span className="material-symbols-outlined text-[14px]">block</span> 
+                                                    Admin Blocked
+                                                </span>
+                                            ) : (
+                                                <div className="flex justify-end gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                                                    <button
+                                                        onClick={() => onView && onView(item)}
+                                                        className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                                                        title="View Details"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">visibility</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onEdit && onEdit(item)}
+                                                        className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                                                        title="Edit Properties"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm">edit</span>
+                                                    </button>
+                                                    <button
+                                                        onClick={() => onDelete && onDelete(item.id)}
+                                                        className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-500 transition-colors group/del"
+                                                        title="Delete API Endpoint"
+                                                    >
+                                                        <span className="material-symbols-outlined text-sm group-hover/del:scale-110 transition-transform">delete</span>
+                                                    </button>
+                                                </div>
+                                            )}
                                         </td>
                                     </tr>
                                 );

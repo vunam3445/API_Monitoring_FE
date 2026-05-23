@@ -1,0 +1,691 @@
+import React from 'react';
+import { getStatusBadge, getPlanBadge, formatDate } from '../utils';
+import ApiDetailModal from '../../../../APIList/components/ApiDetailModal';
+import AlertDetailModal from '../../../../Alerts/components/AlertDetailModal';
+import LogDetailsPanel from '../../../../Logs/components/LogDetailsPanel';
+import { useUserDetails } from '../hooks/useUserDetails';
+import { useUserApis } from '../hooks/useUserApis';
+import { useUserAlerts } from '../hooks/useUserAlerts';
+import { useUserLogs } from '../hooks/useUserLogs';
+
+// --- SUB-COMPONENTS FOR TABS ---
+
+const UserApisTabSkeleton = () => (
+    <>
+        {Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={idx} className="animate-pulse hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-3/4"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-5/6"></div></td>
+                <td className="px-6 py-4"><div className="h-6 bg-slate-200 dark:bg-slate-700 rounded-full w-10 mx-auto"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-full w-16 mx-auto"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/2"></div></td>
+                <td className="px-6 py-4"><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-16 ml-auto"></div></td>
+            </tr>
+        ))}
+    </>
+);
+
+const UserApisTab = ({ userId }) => {
+    const {
+        apis,
+        loading,
+        pagination,
+        selectedApi,
+        setSelectedApi,
+        fetchApis,
+        handleToggleActive,
+        handleDelete
+    } = useUserApis(userId);
+
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in duration-300">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[900px]">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">API Name</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Method & Endpoint</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Active</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Latency</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {loading ? <UserApisTabSkeleton /> : apis.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="px-6 py-10 text-center text-slate-500">Người dùng không có Monitor nào.</td>
+                            </tr>
+                        ) : (
+                            apis.map(api => (
+                                <tr key={api.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`size-2.5 rounded-full ring-4 ${api.lastStatus === 'UP' ? 'bg-emerald-500 ring-emerald-500/10' : api.lastStatus === 'DOWN' ? 'bg-rose-500 ring-rose-500/10' : 'bg-slate-300 ring-slate-300/10'}`}></div>
+                                            <span className="font-bold text-slate-900 dark:text-slate-100">{api.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-tighter border ${api.method === 'POST' ? 'bg-blue-100 text-blue-600 border-blue-200' : 'bg-emerald-100 text-emerald-600 border-emerald-200'}`}>
+                                                {api.method || 'GET'}
+                                            </span>
+                                            <span className="text-sm font-mono text-slate-500 dark:text-slate-400 max-w-[250px] truncate block" title={api.endpoint || api.url}>{api.endpoint || api.url}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <button
+                                            type="button"
+                                            role="switch"
+                                            onClick={() => handleToggleActive(api.id)}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${api.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                            title={api.isActive ? 'Tạm dừng monitor' : 'Kích hoạt monitor'}
+                                        >
+                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${api.isActive ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                        </button>
+                                    </td>
+                                    <td className="px-6 py-4 text-center">
+                                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${api.lastStatus === 'UP' ? 'bg-emerald-100 text-emerald-600' : api.lastStatus === 'DOWN' ? 'bg-rose-100 text-rose-600' : 'bg-slate-100 text-slate-500'}`}>
+                                            {api.lastStatus || 'UNKNOWN'}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-sm font-semibold">
+                                        {api.uptime ? `${api.uptime}%` : '--'}
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button
+                                                onClick={() => setSelectedApi(api)}
+                                                className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg text-slate-500 dark:text-slate-400 transition-colors"
+                                                title="Xem chi tiết"
+                                            >
+                                                <span className="material-symbols-outlined text-sm flex">visibility</span>
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(api.id)}
+                                                className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg text-red-500 transition-colors group/del"
+                                                title="Xoá Monitor"
+                                            >
+                                                <span className="material-symbols-outlined text-sm group-hover/del:scale-110 transition-transform">delete</span>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            {/* Pagination */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{apis.length > 0 ? pagination.page * pagination.size + 1 : 0}-{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span> of <span className="text-slate-900 dark:text-slate-200">{pagination.totalElements}</span> APIs</p>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => fetchApis(pagination.page - 1)} disabled={pagination.page <= 0 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_left</span></button>
+                    <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">{pagination.page + 1}</button>
+                    <button onClick={() => fetchApis(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages - 1 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_right</span></button>
+                </div>
+            </div>
+
+            <ApiDetailModal
+                isOpen={!!selectedApi}
+                onClose={() => setSelectedApi(null)}
+                apiData={selectedApi}
+            />
+        </div>
+    );
+};
+
+const UserAlertsTabSkeleton = () => (
+    <>
+        {Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={idx} className="animate-pulse hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-full w-20"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-20"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-48"></div></td>
+                <td className="px-6 py-4"><div className="h-8 bg-slate-200 dark:bg-slate-700 rounded w-8 ml-auto"></div></td>
+            </tr>
+        ))}
+    </>
+);
+
+const UserAlertsTab = ({ userId }) => {
+    const {
+        alerts,
+        loading,
+        pagination,
+        selectedAlert,
+        setSelectedAlert,
+        fetchAlerts
+    } = useUserAlerts(userId);
+
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden animate-in fade-in duration-300">
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse min-w-[800px]">
+                    <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Time</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Monitor</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Severity</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Message</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {loading ? <UserAlertsTabSkeleton /> : alerts.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" className="px-6 py-10 text-center text-slate-500">Người dùng không có cảnh báo nào.</td>
+                            </tr>
+                        ) : (
+                            alerts.map(alert => (
+                                <tr key={alert.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group">
+                                    <td className="px-6 py-4 text-sm font-medium text-slate-500">{new Date(alert.time || alert.triggeredAt).toLocaleTimeString()}</td>
+                                    <td className="px-6 py-4 font-bold">{alert.apiName || alert.monitorName}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-black border flex items-center gap-1.5 w-max ${alert.severity === 'CRITICAL' || alert.severity === 'ERROR' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-amber-100 text-amber-700 border-amber-200'}`}>
+                                            <span className={`w-1.5 h-1.5 rounded-full ${alert.severity === 'CRITICAL' || alert.severity === 'ERROR' ? 'bg-red-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                                            {alert.severity}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-black border ${alert.status === 'UNRESOLVED' || alert.status === 'ACTIVE' ? 'border-primary/30 text-primary bg-primary/5' : 'border-emerald-500/30 text-emerald-600 bg-emerald-500/5'}`}>
+                                            {alert.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400 max-w-[200px] truncate">{alert.message}</td>
+                                    <td className="px-6 py-4 text-right">
+                                        <button
+                                            onClick={() => setSelectedAlert(alert)}
+                                            className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                                            title="Xem chi tiết"
+                                        >
+                                            <span className="material-symbols-outlined text-lg font-black flex">info</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
+            </div>
+            {/* Pagination */}
+            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{alerts.length > 0 ? pagination.page * pagination.size + 1 : 0}-{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span> of <span className="text-slate-900 dark:text-slate-200">{pagination.totalElements}</span> Alerts</p>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => fetchAlerts(pagination.page - 1)} disabled={pagination.page <= 0 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_left</span></button>
+                    <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">{pagination.page + 1}</button>
+                    <button onClick={() => fetchAlerts(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages - 1 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_right</span></button>
+                </div>
+            </div>
+
+            <AlertDetailModal
+                isOpen={!!selectedAlert}
+                onClose={() => setSelectedAlert(null)}
+                alertData={selectedAlert}
+                loading={false}
+            />
+        </div>
+    );
+};
+
+const UserLogsTabSkeleton = () => (
+    <>
+        {Array.from({ length: 5 }).map((_, idx) => (
+            <tr key={idx} className="animate-pulse hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-24"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-32"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded w-12"></div></td>
+                <td className="px-6 py-4"><div className="h-5 bg-slate-200 dark:bg-slate-700 rounded-full w-12 mx-auto"></div></td>
+                <td className="px-6 py-4"><div className="h-4 bg-slate-200 dark:bg-slate-700 rounded w-16 ml-auto"></div></td>
+            </tr>
+        ))}
+    </>
+);
+
+const UserLogsTab = ({ userId }) => {
+    const {
+        logs,
+        loading,
+        pagination,
+        selectedLog,
+        setSelectedLog,
+        fetchLogs,
+        handleRetry
+    } = useUserLogs(userId);
+
+    return (
+        <div className="flex gap-4 items-start animate-in fade-in duration-300">
+            <div className="flex-1 bg-white dark:bg-slate-900/50 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col">
+                <div className="overflow-x-auto min-h-0">
+                    <table className="w-full text-left border-collapse min-w-[800px]">
+                        <thead className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800">
+                            <tr>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Timestamp</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Monitor</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Method</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
+                                <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Latency</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {loading ? <UserLogsTabSkeleton /> : logs.length === 0 ? (
+                                <tr>
+                                    <td colSpan="5" className="px-6 py-10 text-center text-slate-500">Người dùng không có nhật ký nào.</td>
+                                </tr>
+                            ) : (
+                                logs.map(log => (
+                                    <tr
+                                        key={log.id}
+                                        onClick={() => setSelectedLog(log)}
+                                        className={`cursor-pointer transition-colors ${selectedLog?.id === log.id ? 'bg-primary/5 ring-1 ring-inset ring-primary/30' : 'hover:bg-slate-50 dark:hover:bg-slate-800/30'}`}
+                                    >
+                                        <td className="px-6 py-4 font-mono text-xs text-slate-500">{new Date(log.checkedAt || log.time).toLocaleString()}</td>
+                                        <td className="px-6 py-4 font-bold text-sm">{log.monitorName}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase border ${log.monitorMethod === 'POST' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-50 text-emerald-600 border-emerald-200'}`}>
+                                                {log.monitorMethod || log.method || 'GET'}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`flex items-center justify-center gap-1.5 font-bold text-xs ${log.statusCode === 200 || log.status === 'UP' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                <span className={`size-2 rounded-full ${log.statusCode === 200 || log.status === 'UP' ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                                {log.statusCode || (log.status === 'UP' ? 200 : 500)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right font-mono text-sm text-slate-500">{log.responseTimeMs}ms</td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+                {/* Pagination */}
+                <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/30 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-slate-500">Showing <span className="text-slate-900 dark:text-slate-200">{logs.length > 0 ? pagination.page * pagination.size + 1 : 0}-{Math.min((pagination.page + 1) * pagination.size, pagination.totalElements)}</span> of <span className="text-slate-900 dark:text-slate-200">{pagination.totalElements}</span> Logs</p>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => fetchLogs(pagination.page - 1)} disabled={pagination.page <= 0 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_left</span></button>
+                        <button className="size-8 rounded-lg text-xs font-bold bg-primary text-white">{pagination.page + 1}</button>
+                        <button onClick={() => fetchLogs(pagination.page + 1)} disabled={pagination.page >= pagination.totalPages - 1 || loading} className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 disabled:text-slate-400 disabled:opacity-50 hover:bg-slate-50"><span className="material-symbols-outlined">chevron_right</span></button>
+                    </div>
+                </div>
+            </div>
+
+            {selectedLog && (
+                <div className="w-[400px] flex-shrink-0 animate-in slide-in-from-right duration-300">
+                    <LogDetailsPanel
+                        log={{ ...selectedLog, checkedAt: selectedLog.checkedAt || selectedLog.time }} // align to what component expects
+                        onClose={() => setSelectedLog(null)}
+                        onRetry={() => handleRetry(selectedLog.monitorId || selectedLog.apiId)}
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+
+// --- MAIN COMPONENT ---
+
+const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleActiveUser }) => {
+    const {
+        activeTab,
+        setActiveTab,
+        monitorStats,
+        alertStats,
+        loadingStats,
+        plans,
+        loadingPlans,
+        selectedPlanId,
+        setSelectedPlanId,
+        isUpdatingPlan,
+        handleUpdatePlan,
+        extendDuration,
+        setExtendDuration,
+        extendUnit,
+        setExtendUnit,
+        extendNote,
+        setExtendNote,
+        extendAmount,
+        setExtendAmount,
+        handleManualRenewal
+    } = useUserDetails(selectedUser, setSelectedUser);
+
+    if (!selectedUser) return null;
+
+    return (
+        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header / Back Button Area */}
+            <div className="flex items-center justify-between">
+                <button
+                    onClick={() => setSelectedUser(null)}
+                    className="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors font-bold text-sm bg-white dark:bg-slate-800 px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md"
+                >
+                    <span className="material-symbols-outlined text-[18px]">arrow_back</span>
+                    Quay lại danh sách
+                </button>
+                <div className="flex items-center gap-3">
+                    {selectedUser.status === 'ACTIVE' ? (
+                        <button
+                            onClick={() => { handleBlockUser(selectedUser.id); setSelectedUser(null); }}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/20 dark:hover:bg-rose-900/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 rounded-xl font-bold text-sm transition-all shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">lock</span>
+                            Khóa User
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => { handleActiveUser(selectedUser.id); setSelectedUser(null); }}
+                            className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:hover:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-900/50 text-emerald-600 rounded-xl font-bold text-sm transition-all shadow-sm"
+                        >
+                            <span className="material-symbols-outlined text-[18px]">lock_open</span>
+                            Mở khóa
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Main Content Layout */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                {/* Left Column: Profile Card */}
+                <div className="lg:col-span-1 space-y-6">
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden relative">
+                        <div className="h-32 bg-gradient-to-br from-primary/20 via-blue-500/10 to-purple-500/10"></div>
+                        <div className="px-8 pb-8 flex flex-col items-center -mt-16">
+                            <div className="relative group">
+                                <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl scale-110 group-hover:scale-125 transition-transform duration-500"></div>
+                                <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-slate-900 shadow-xl relative z-10 bg-slate-100 dark:bg-slate-800">
+                                    <img
+                                        alt="Avatar"
+                                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                                        src={selectedUser.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(selectedUser.fullName)}&background=random`}
+                                    />
+                                </div>
+                                <div className={`absolute bottom-2 right-2 w-7 h-7 rounded-full border-4 border-white dark:border-slate-900 z-20 shadow-sm flex items-center justify-center ${getStatusBadge(selectedUser.status).bg}`}>
+                                </div>
+                            </div>
+                            <h3 className="mt-5 text-2xl font-black text-slate-900 dark:text-white tracking-tight">{selectedUser.fullName}</h3>
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{selectedUser.email}</p>
+
+                            <div className="flex items-center justify-center gap-2 mt-5 w-full">
+                                <span className={`px-4 py-2 flex-1 text-center ${getPlanBadge(selectedUser.planType)} text-[12px] font-black rounded-xl uppercase tracking-wider shadow-sm`}>
+                                    Gói {selectedUser.planType}
+                                </span>
+                                <span className={`px-4 py-2 flex-1 text-center ${getStatusBadge(selectedUser.status).lightBg} ${getStatusBadge(selectedUser.status).text} text-[12px] font-black rounded-xl uppercase tracking-wider shadow-sm`}>
+                                    {selectedUser.status}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Account Info */}
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 space-y-4">
+                        <h5 className="text-[11px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Thông tin hệ thống</h5>
+                        <div className="space-y-4">
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <span className="text-sm font-bold text-slate-500">Người dùng ID</span>
+                                <span className="text-sm font-mono font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-800 px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700">{selectedUser.id}</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <span className="text-sm font-bold text-slate-500">Công ty</span>
+                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{selectedUser.company || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between items-center pb-3 border-b border-slate-100 dark:border-slate-800">
+                                <span className="text-sm font-bold text-slate-500">Ngày gia nhập</span>
+                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(selectedUser.createdAt)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm font-bold text-slate-500">Đăng nhập cuối</span>
+                                <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(selectedUser.lastLoginAt)}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Column: Stats & Plan */}
+                <div className="lg:col-span-2 space-y-6">
+                    {/* Stats Dashboard */}
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 lg:p-8">
+                        <div className="flex items-center justify-between mb-6">
+                            <h5 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                                <span className="material-symbols-outlined text-primary">analytics</span>
+                                Thống kê sử dụng {loadingStats && <span className="animate-pulse ml-2 text-xs text-primary italic lowercase font-normal leading-none">(Đang cập nhật...)</span>}
+                            </h5>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="bg-gradient-to-br from-blue-50 to-white dark:from-blue-900/20 dark:to-slate-800/50 p-6 rounded-2xl border border-blue-100/50 dark:border-blue-800/30 shadow-sm transition-transform hover:-translate-y-1 group">
+                                <div className="w-12 h-12 rounded-2xl bg-blue-100 dark:bg-blue-800/50 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <span className="material-symbols-outlined text-[24px]">monitor_heart</span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Monitors hiện có</p>
+                                <div className="flex items-baseline gap-2">
+                                    <span className="text-4xl font-black text-slate-800 dark:text-white">{monitorStats.totalMonitor}</span>
+                                    <span className="text-sm font-bold text-slate-400">/ {selectedUser.planType === 'ENTERPRISE' ? '∞' : selectedUser.planType === 'PRO' ? 100 : 20}</span>
+                                </div>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-emerald-50 to-white dark:from-emerald-900/20 dark:to-slate-800/50 p-6 rounded-2xl border border-emerald-100/50 dark:border-emerald-800/30 shadow-sm transition-transform hover:-translate-y-1 group">
+                                <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-800/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <span className="material-symbols-outlined text-[24px]">task_alt</span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Active Monitors</p>
+                                <span className="text-4xl font-black text-emerald-600 dark:text-emerald-400">{monitorStats.totalActiveMonitor}</span>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-amber-50 to-white dark:from-amber-900/20 dark:to-slate-800/50 p-6 rounded-2xl border border-amber-100/50 dark:border-amber-800/30 shadow-sm transition-transform hover:-translate-y-1 group">
+                                <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-800/50 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <span className="material-symbols-outlined text-[24px]">notifications_active</span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Alerts đã gửi (Tháng này)</p>
+                                <span className="text-4xl font-black text-amber-600 dark:text-amber-400">{alertStats.totalAlert}</span>
+                            </div>
+
+                            <div className="bg-gradient-to-br from-rose-50 to-white dark:from-rose-900/20 dark:to-slate-800/50 p-6 rounded-2xl border border-rose-100/50 dark:border-rose-800/30 shadow-sm transition-transform hover:-translate-y-1 group">
+                                <div className="w-12 h-12 rounded-2xl bg-rose-100 dark:bg-rose-800/50 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                    <span className="material-symbols-outlined text-[24px]">warning</span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase tracking-wider">Incidents (Tháng này)</p>
+                                <span className="text-4xl font-black text-rose-600 dark:text-rose-400">{alertStats.totalIncident}</span>
+                            </div>
+                        </div>
+
+                        {/* Quota Progress */}
+                        {/* <div className="bg-slate-50 dark:bg-slate-800/40 p-6 rounded-2xl border border-slate-100 dark:border-slate-700/50 mt-6 shadow-sm">
+                            <div className="flex justify-between items-end mb-4">
+                                <div>
+                                    <h6 className="text-sm font-bold text-slate-800 dark:text-white">API Quota Usage</h6>
+                                    <p className="text-xs font-medium text-slate-500 mt-1">Đã dùng 6.5 triệu / 10 triệu requests</p>
+                                </div>
+                                <span className="text-3xl font-black text-primary">65%</span>
+                            </div>
+                            <div className="w-full h-4 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden shadow-inner">
+                                <div className="h-full bg-gradient-to-r from-primary to-blue-500 rounded-full relative" style={{ width: '65%' }}>
+                                    <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]"></div>
+                                </div>
+                            </div>
+                        </div> */}
+                    </div>
+
+                    {/* Plan Management */}
+                    <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm p-6 lg:p-8 relative overflow-hidden">
+                        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none"></div>
+
+                        <div className="flex items-center gap-2 mb-6">
+                            <span className="material-symbols-outlined text-primary">credit_card</span>
+                            <h5 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest">Nâng cấp & Quản lý Gói</h5>
+                        </div>
+
+                        <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+                            <div className="flex-1">
+                                <p className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-2">Gói đang sử dụng</p>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className={`px-4 py-1.5 ${getPlanBadge(selectedUser.planType)} text-[14px] font-black rounded-lg uppercase shadow-sm`}>
+                                        {selectedUser.planType}
+                                    </span>
+                                </div>
+                                <p className="text-sm font-medium text-slate-500">Hết hạn gói: {(() => {
+                                    if (!selectedUser.currentPeriodEnd) return <span className="font-bold text-slate-400">Không xác định</span>;
+                                    const exp = new Date(selectedUser.currentPeriodEnd);
+                                    const now = new Date();
+                                    const daysLeft = Math.ceil((exp - now) / (1000 * 60 * 60 * 24));
+                                    const isExpired = daysLeft < 0;
+                                    const isSoon = daysLeft >= 0 && daysLeft <= 30;
+                                    return (
+                                        <span className={`font-bold ${isExpired ? 'text-red-500' : isSoon ? 'text-amber-500' : 'text-slate-800 dark:text-slate-200'}`}>
+                                            {exp.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' })}
+                                            <span className={`ml-2 text-xs font-semibold px-2 py-0.5 rounded-full ${isExpired ? 'bg-red-100 text-red-500' : isSoon ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'}`}>
+                                                {isExpired ? `Đã hết hạn` : `Còn ${daysLeft} ngày`}
+                                            </span>
+                                        </span>
+                                    );
+                                })()}</p>
+                            </div>
+
+                            <div className="flex-1 w-full md:w-auto bg-slate-50 dark:bg-slate-800 p-5 rounded-2xl border border-slate-100 dark:border-slate-700">
+                                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2 block">Cập nhật gói</label>
+                                <div className="flex gap-2">
+                                    <div className="flex-1 relative">
+                                        {loadingPlans ? (
+                                            <div className="w-full h-[46px] bg-slate-200 dark:bg-slate-700 animate-pulse rounded-xl"></div>
+                                        ) : (
+                                            <>
+                                                <select
+                                                    value={selectedPlanId}
+                                                    onChange={(e) => setSelectedPlanId(e.target.value)}
+                                                    className="w-full appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-primary/20 outline-none transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                                                    disabled={isUpdatingPlan}
+                                                >
+                                                    <option value="" disabled>Chọn gói mới...</option>
+                                                    {plans.map(plan => (
+                                                        <option key={plan.id} value={plan.id}>{plan.name}</option>
+                                                    ))}
+                                                </select>
+                                                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
+                                            </>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={handleUpdatePlan}
+                                        disabled={!selectedPlanId || isUpdatingPlan || loadingPlans}
+                                        className="px-6 py-3 bg-primary text-white font-bold text-sm rounded-xl hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/20 transition-all active:scale-95 shadow-md disabled:opacity-50 disabled:hover:shadow-none flex items-center justify-center gap-2 min-w-[120px]"
+                                    >
+                                        {isUpdatingPlan ? (
+                                            <>
+                                                <span className="material-symbols-outlined animate-spin text-[18px]">progress_activity</span>
+                                                Đang xử lý
+                                            </>
+                                        ) : (
+                                            'Xác nhận'
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4">
+                            <div className="flex flex-col gap-4 bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 w-full max-w-2xl">
+                                <div className="flex flex-wrap items-center gap-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="60"
+                                            value={extendDuration}
+                                            onChange={(e) => setExtendDuration(e.target.value)}
+                                            className="w-20 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                        <div className="relative">
+                                            <select
+                                                value={extendUnit}
+                                                onChange={(e) => setExtendUnit(e.target.value)}
+                                                className="appearance-none bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl pl-4 pr-10 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer min-w-[100px]"
+                                            >
+                                                <option value="DAYS">Ngày</option>
+                                                <option value="MONTHS">Tháng</option>
+                                                <option value="YEARS">Năm</option>
+                                            </select>
+                                            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-lg">expand_more</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="relative flex-1 min-w-[150px]">
+                                        <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">payments</span>
+                                        <input
+                                            type="number"
+                                            value={extendAmount}
+                                            onChange={(e) => setExtendAmount(e.target.value)}
+                                            placeholder="Số tiền (nếu có)..."
+                                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl pl-10 pr-4 py-2.5 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={extendNote}
+                                        onChange={(e) => setExtendNote(e.target.value)}
+                                        placeholder="Ghi chú thêm về việc gia hạn này..."
+                                        className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-600 rounded-xl px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 outline-none focus:ring-2 focus:ring-primary/20"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={handleManualRenewal}
+                                    disabled={isUpdatingPlan}
+                                    className="flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:opacity-90 text-white border border-primary/20 rounded-xl font-bold text-sm transition-all shadow-md active:scale-95 disabled:opacity-50">
+                                    {isUpdatingPlan ? (
+                                        <>
+                                            <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+                                            Đang xử lý...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined text-[20px]">autorenew</span>
+                                            Xác nhận gia hạn thủ công
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- TABBED DATA SECTION --- */}
+            <div className="mt-4">
+                <div className="flex items-center gap-6 border-b border-slate-200 dark:border-slate-800 mb-6">
+                    <button
+                        className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'apis' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        onClick={() => setActiveTab('apis')}
+                    >
+                        <span className="material-symbols-outlined text-lg">api</span>
+                        API Monitors
+                    </button>
+                    <button
+                        className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'alerts' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        onClick={() => setActiveTab('alerts')}
+                    >
+                        <span className="material-symbols-outlined text-lg">notifications</span>
+                        Gửi Cảnh báo
+                    </button>
+                    <button
+                        className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${activeTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                        onClick={() => setActiveTab('logs')}
+                    >
+                        <span className="material-symbols-outlined text-lg">history</span>
+                        Nhật ký Uptime
+                    </button>
+                </div>
+
+                {activeTab === 'apis' && <UserApisTab userId={selectedUser.id} />}
+                {activeTab === 'alerts' && <UserAlertsTab userId={selectedUser.id} />}
+                {activeTab === 'logs' && <UserLogsTab userId={selectedUser.id} />}
+            </div>
+        </div>
+    );
+};
+
+export default UserDetails;

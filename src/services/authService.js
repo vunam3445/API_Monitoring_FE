@@ -10,4 +10,7 @@ export const authService = {
   googleLogin: async (data) => {
     return apiClient.post('api/auth/google', data);
   },
+  changePassword: async (data) => {
+    return apiClient.post('api/auth/change-password', data);
+  },
 };

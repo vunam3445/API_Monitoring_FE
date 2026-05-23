@@ -16,18 +16,17 @@ const AlertsHeader = ({ filters, handleFilterChange, refresh }) => {
                         <button
                             key={r}
                             onClick={() => handleFilterChange({ range: r })}
-                            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${
-                                filters.range === r 
-                                    ? 'bg-white dark:bg-slate-700 text-primary shadow-sm' 
+                            className={`px-4 py-1.5 rounded-lg text-xs font-black transition-all ${filters.range === r
+                                    ? 'bg-white dark:bg-slate-700 text-primary shadow-sm'
                                     : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                            }`}
+                                }`}
                         >
                             {r.toUpperCase()}
                         </button>
                     ))}
                 </div>
-                
-                <button 
+
+                <button
                     onClick={refresh}
                     className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:text-primary rounded-xl transition-all shadow-sm"
                     title="Refresh Data"

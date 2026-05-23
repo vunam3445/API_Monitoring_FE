@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useUser } from '../../../hooks/useUser';
 import Skeleton from '../../../components/UI/Skeleton';
 import UpdateProfileModal from './UpdateProfileModal';
+import ChangePasswordModal from './ChangePasswordModal';
 
 /**
  * Account Section Component
@@ -10,6 +11,7 @@ import UpdateProfileModal from './UpdateProfileModal';
 const AccountSection = () => {
     const { user, loading, error, refresh } = useUser();
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
+    const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] = useState(false);
 
     // Loading State with Skeleton
     if (loading && !user) {
@@ -86,7 +88,10 @@ const AccountSection = () => {
                     >
                         Update Profile
                     </button>
-                    <button className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95">
+                    <button 
+                        onClick={() => setIsChangePasswordModalOpen(true)}
+                        className="flex-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-bold py-2.5 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-95"
+                    >
                         Change Password
                     </button>
                 </div>
@@ -97,6 +102,11 @@ const AccountSection = () => {
                 onClose={() => setIsUpdateModalOpen(false)}
                 user={user}
                 onUpdateSuccess={() => refresh()}
+            />
+
+            <ChangePasswordModal 
+                isOpen={isChangePasswordModalOpen}
+                onClose={() => setIsChangePasswordModalOpen(false)}
             />
         </>
     );

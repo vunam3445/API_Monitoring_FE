@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const AlertsTableSection = ({ 
     alerts, 
@@ -8,10 +8,33 @@ const AlertsTableSection = ({
     acknowledge, 
     resolve, 
     remove,
+    getDetail,
     exportData, 
     handleFilterChange, 
     handlePageChange 
 }) => {
+    const [localSearch, setLocalSearch] = useState(filters.search || '');
+
+    useEffect(() => {
+        setLocalSearch(filters.search || '');
+    }, [filters.search]);
+
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (filters.search !== localSearch) {
+                handleFilterChange({ search: localSearch });
+            }
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [localSearch, filters.search, handleFilterChange]);
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            if (filters.search !== localSearch) {
+                handleFilterChange({ search: localSearch });
+            }
+        }
+    };
     
     const getSeverityBadge = (severity) => {
         switch (severity) {
@@ -75,8 +98,9 @@ const AlertsTableSection = ({
                             className="w-full pl-10 pr-4 py-2 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all"
                             placeholder="Search API or incident..." 
                             type="text" 
-                            value={filters.search}
-                            onChange={(e) => handleFilterChange({ search: e.target.value })}
+                            value={localSearch}
+                            onChange={(e) => setLocalSearch(e.target.value)}
+                            onKeyDown={handleKeyDown}
                         />
                     </div>
                     
@@ -177,11 +201,18 @@ const AlertsTableSection = ({
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right">
                                         <div className="flex items-center justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button 
+                                                onClick={() => getDetail(alert.id)}
+                                                className="p-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-900/40 rounded-lg transition-all"
+                                                title="Xem chi tiết"
+                                            >
+                                                <span className="material-symbols-outlined text-lg font-black">info</span>
+                                            </button>
                                             {alert.status === 'ACTIVE' && (
                                                 <button 
                                                     onClick={() => acknowledge(alert.id)}
                                                     className="p-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-lg transition-all"
-                                                    title="Acknowledge"
+                                                    title="Xác nhận tiếp nhận"
                                                 >
                                                     <span className="material-symbols-outlined text-lg">visibility</span>
                                                 </button>
@@ -190,7 +221,7 @@ const AlertsTableSection = ({
                                                 <button 
                                                     onClick={() => resolve(alert.id)}
                                                     className="p-1.5 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-lg transition-all"
-                                                    title="Resolve"
+                                                    title="Giải quyết"
                                                 >
                                                     <span className="material-symbols-outlined text-lg">check_circle</span>
                                                 </button>

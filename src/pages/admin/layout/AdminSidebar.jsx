@@ -40,16 +40,12 @@ const AdminSidebar = () => {
                     <span>Monitoring</span>
                 </NavLink>
                 <NavLink to="/admin/alerts" className={navItemClass}>
-                    <span className="material-symbols-outlined">notifications_active</span>
-                    <span>Alerts</span>
+                    <span className="material-symbols-outlined">send</span>
+                    <span>Notification Delivery</span>
                 </NavLink>
                 <NavLink to="/admin/pricing-plans" className={navItemClass}>
                     <span className="material-symbols-outlined">payments</span>
                     <span>Pricing Plans</span>
-                </NavLink>
-                <NavLink to="/admin/subscriptions" className={navItemClass}>
-                    <span className="material-symbols-outlined">event_repeat</span>
-                    <span>Subscriptions</span>
                 </NavLink>
                 <NavLink to="/admin/revenue-analytics" className={navItemClass}>
                     <span className="material-symbols-outlined">analytics</span>
