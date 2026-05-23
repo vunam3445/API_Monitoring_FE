@@ -13,6 +13,7 @@ const AdminSystemLogs = () => {
     
     // Filters State
     const [keyword, setKeyword] = useState('');
+    const [debouncedKeyword, setDebouncedKeyword] = useState('');
     const [levelFilter, setLevelFilter] = useState('ALL');
     const [timeFilter, setTimeFilter] = useState('ALL');
     
@@ -27,6 +28,14 @@ const AdminSystemLogs = () => {
     const itemsPerPage = 50;
     const liveTimerRef = useRef(null);
 
+    // Cơ chế Debounce hoãn gọi API tìm kiếm khi người dùng đang gõ phím (tránh spam request)
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedKeyword(keyword);
+        }, 500); // 500ms debounce
+        return () => clearTimeout(timer);
+    }, [keyword]);
+
     // Hàm gọi API lấy danh sách logs theo bộ lọc và phân trang từ Backend
     const fetchLogs = async () => {
         // Nếu Live Tail đang chạy, chúng ta để cơ chế Polling quản lý cập nhật danh sách
@@ -34,11 +43,19 @@ const AdminSystemLogs = () => {
 
         setLoading(true);
         try {
+            console.log("fetchLogs API được gọi với tham số:", {
+                page: currentPage - 1,
+                size: itemsPerPage,
+                level: levelFilter,
+                keyword: debouncedKeyword,
+                timeRange: timeFilter
+            });
+
             const response = await adminSystemLogsService.getLogs({
                 page: currentPage - 1, // Spring Boot 0-indexed
                 size: itemsPerPage,
                 level: levelFilter,
-                keyword: keyword,
+                keyword: debouncedKeyword,
                 timeRange: timeFilter
             });
 
@@ -50,6 +67,10 @@ const AdminSystemLogs = () => {
                 setLogs(parsedLogs);
                 setTotalElements(response.page?.totalElements || response.totalElements || 0);
                 setTotalPages(response.page?.totalPages || response.totalPages || 1);
+            } else {
+                setLogs([]);
+                setTotalElements(0);
+                setTotalPages(1);
             }
         } catch (error) {
             console.error("Failed to fetch logs:", error);
@@ -79,7 +100,7 @@ const AdminSystemLogs = () => {
     // Tải logs mỗi khi các bộ lọc hoặc trang hiện tại thay đổi
     useEffect(() => {
         fetchLogs();
-    }, [currentPage, levelFilter, keyword, timeFilter, isLive]);
+    }, [currentPage, levelFilter, debouncedKeyword, timeFilter, isLive]);
 
     // Tải stats ban đầu
     useEffect(() => {
@@ -89,7 +110,7 @@ const AdminSystemLogs = () => {
     // Reset trang về 1 khi các bộ lọc thay đổi
     useEffect(() => {
         setCurrentPage(1);
-    }, [keyword, levelFilter, timeFilter]);
+    }, [debouncedKeyword, levelFilter, timeFilter]);
 
     // Cơ chế Live Tail thật sự qua Polling API mỗi 2 giây khi bật
     useEffect(() => {
@@ -101,7 +122,7 @@ const AdminSystemLogs = () => {
                         page: 0,
                         size: itemsPerPage,
                         level: levelFilter,
-                        keyword: keyword,
+                        keyword: debouncedKeyword,
                         timeRange: timeFilter
                     });
 
@@ -144,12 +165,11 @@ const AdminSystemLogs = () => {
                 }
             }, 2000);
         } else {
+            // Khi isLive là false, chỉ dọn dẹp interval, KHÔNG gọi lại fetchLogs/fetchStats ở đây
+            // vì useEffect tải logs phía trên sẽ tự động đảm nhiệm gọi API khi dependencies thay đổi.
             if (liveTimerRef.current) {
                 clearInterval(liveTimerRef.current);
             }
-            // Gọi lại dữ liệu thật và stats thật từ API khi tắt Live Tail để đồng bộ
-            fetchLogs();
-            fetchStats();
         }
 
         return () => {
@@ -157,7 +177,7 @@ const AdminSystemLogs = () => {
                 clearInterval(liveTimerRef.current);
             }
         };
-    }, [isLive, levelFilter, keyword, timeFilter]);
+    }, [isLive, levelFilter, debouncedKeyword, timeFilter]);
 
     // Trả về phần tên Class rút gọn để bảng hiển thị đẹp mắt hơn
     const getShortClassName = (className) => {
@@ -264,27 +284,15 @@ const AdminSystemLogs = () => {
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Giám sát hoạt động, lỗi nghiệp vụ và luồng xử lý thời gian thực của chính hệ thống Admin.</p>
                 </div>
                 <div className="flex items-center gap-3">
-                    {/* Live Tail Toggle Button */}
-                    <button 
-                        onClick={() => setIsLive(!isLive)}
-                        className={`px-4 py-2 flex items-center gap-2 text-sm font-bold rounded-xl transition-all shadow-md ${
-                            isLive 
-                            ? 'bg-emerald-500 hover:bg-emerald-600 text-white animate-pulse' 
-                            : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                    >
-                        <span className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-white' : 'bg-slate-400'}`}></span>
-                        {isLive ? 'Live Tail [ON]' : 'Live Tail [OFF]'}
-                    </button>
-
-                    <button 
+                    {/* Làm mới & Dọn dẹp log */}
+                    <button
                         onClick={handleRefresh}
                         className="px-4 py-2 flex items-center gap-2 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
                     >
                         <span className="material-symbols-outlined text-lg">refresh</span>
                         Làm mới
                     </button>
-                    <button 
+                    <button
                         onClick={handleClearLogs}
                         className="px-4 py-2 flex items-center gap-2 text-sm font-bold text-white bg-rose-500 hover:bg-rose-600 rounded-xl transition-colors shadow-lg shadow-rose-500/20"
                     >
@@ -298,7 +306,7 @@ const AdminSystemLogs = () => {
             <LogStats stats={stats} />
 
             {/* Filter Bar Panel */}
-            <LogFilters 
+            <LogFilters
                 keyword={keyword}
                 setKeyword={setKeyword}
                 levelFilter={levelFilter}
@@ -317,12 +325,12 @@ const AdminSystemLogs = () => {
                         <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Đang tải logs từ hệ thống...</p>
                     </div>
                 ) : (
-                    <LogTable 
-                        paginatedLogs={isLive ? logs.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage) : logs}
-                        filteredLogsLength={isLive ? logs.length : totalElements}
+                    <LogTable
+                        paginatedLogs={logs}
+                        filteredLogsLength={totalElements}
                         currentPage={currentPage}
                         setCurrentPage={setCurrentPage}
-                        totalPages={isLive ? Math.ceil(logs.length / itemsPerPage) || 1 : totalPages}
+                        totalPages={totalPages}
                         itemsPerPage={itemsPerPage}
                         setSelectedLog={setSelectedLog}
                         formatTimestamp={formatTimestamp}
@@ -334,7 +342,7 @@ const AdminSystemLogs = () => {
 
                 {/* Stack Trace Detail Overlay Panel */}
                 {selectedLog && (
-                    <LogDetailPanel 
+                    <LogDetailPanel
                         selectedLog={selectedLog}
                         setSelectedLog={setSelectedLog}
                         copied={copied}
