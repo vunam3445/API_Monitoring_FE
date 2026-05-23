@@ -20,7 +20,7 @@ const AdminDashboard = () => {
         setLoading(true);
         try {
             const [stats, performance, infrastructure, activity] = await Promise.all([
-                adminDashboardService.getStats(),
+                adminDashboardService.getStatsCards(),
                 adminDashboardService.getPerformance('1d'),
                 adminDashboardService.getInfrastructure(),
                 adminDashboardService.getActivity()

@@ -9,8 +9,12 @@ export const adminDashboardService = {
      * Get summary stats (Revenue, Users, APIs, Alerts)
      * Endpoint: /api/v1/admin/dashboard/stats
      */
-    getStats: async () => {
-        return apiClient.get('/api/v1/admin/dashboard/stats');
+    /**
+     * Get summary stats cards (Revenue, Users, APIs, Alerts)
+     * Endpoint: /api/v1/admin/dashboard/stats-cards
+     */
+    getStatsCards: async () => {
+        return apiClient.get('/api/v1/admin/dashboard/stats-cards');
     },
 
     /**

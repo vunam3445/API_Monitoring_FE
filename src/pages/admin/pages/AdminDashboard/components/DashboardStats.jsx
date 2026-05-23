@@ -1,15 +1,34 @@
 import React from 'react';
 
+const getTrendIcon = (trend, trendUp) => {
+    if (trend === 'Stable' || trend === '0%' || trend === '0') {
+        return 'check_circle';
+    }
+    
+    if (typeof trend === 'string') {
+        if (trend.includes('-')) return 'trending_down';
+        if (trend.includes('+')) return 'trending_up';
+    }
+    
+    const numValue = parseFloat(trend);
+    if (!isNaN(numValue)) {
+        return numValue > 0 ? 'trending_up' : (numValue < 0 ? 'trending_down' : 'check_circle');
+    }
+    
+    return trendUp ? 'trending_up' : 'trending_down';
+};
+
 const DashboardStats = ({ statsData }) => {
     const stats = [
         {
             label: 'Total Revenue (MRR)',
             value: statsData?.revenue?.value || '$0',
+            subValue: statsData?.revenue?.subValue || 'Monthly Recurring Revenue',
             trend: statsData?.revenue?.trend || '0%',
             trendUp: statsData?.revenue?.trendUp ?? true,
             icon: 'payments',
             color: 'emerald',
-            link: '/admin/revenue'
+            link: '/admin/revenue-analytics'
         },
         {
             label: 'Total Users',
@@ -36,7 +55,7 @@ const DashboardStats = ({ statsData }) => {
             value: statsData?.apisDown?.value || '0',
             subValue: statsData?.apisDown?.subValue || 'Critical Issues',
             trend: statsData?.apisDown?.trend || '0',
-            trendUp: statsData?.apisDown?.trendUp ?? false,
+            trendUp: statsData?.apisDown?.trendUp ?? true,
             icon: 'error',
             color: 'red',
             link: '/admin/monitoring'
@@ -44,8 +63,9 @@ const DashboardStats = ({ statsData }) => {
         {
             label: 'Alerts Today',
             value: statsData?.alertsToday?.value || '0',
+            subValue: statsData?.alertsToday?.subValue || 'Triggered Today',
             trend: statsData?.alertsToday?.trend || '0%',
-            trendUp: statsData?.alertsToday?.trendUp ?? false,
+            trendUp: statsData?.alertsToday?.trendUp ?? true,
             icon: 'warning',
             color: 'amber',
             link: '/admin/monitoring'
@@ -67,7 +87,7 @@ const DashboardStats = ({ statsData }) => {
                         <span className={`${stat.trendUp ? 'text-emerald-500' : 'text-red-500'} text-xs font-bold flex items-center`}>
                             {stat.trend} 
                             <span className="material-symbols-outlined text-sm ml-0.5">
-                                {stat.trend === 'Stable' ? 'check_circle' : (stat.trendUp ? 'trending_up' : 'trending_down')}
+                                {getTrendIcon(stat.trend, stat.trendUp)}
                             </span>
                         </span>
                     </div>
