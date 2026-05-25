@@ -27,6 +27,17 @@ const AdminSystemLogs = () => {
     
     const itemsPerPage = 50;
     const liveTimerRef = useRef(null);
+    const detailPanelRef = useRef(null);
+
+    // Tự động cuộn đến chi tiết log khi người dùng click chọn log lỗi
+    useEffect(() => {
+        if (selectedLog && detailPanelRef.current) {
+            detailPanelRef.current.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'nearest' 
+            });
+        }
+    }, [selectedLog]);
 
     // Cơ chế Debounce hoãn gọi API tìm kiếm khi người dùng đang gõ phím (tránh spam request)
     useEffect(() => {
@@ -273,7 +284,7 @@ const AdminSystemLogs = () => {
     };
 
     return (
-        <div className="flex-1 overflow-y-auto p-8 space-y-8 bg-background-light dark:bg-background-dark min-h-0 min-w-0 h-full">
+        <div className="space-y-8 bg-background-light dark:bg-background-dark min-h-0 min-w-0 w-full relative">
             {/* Title & Actions */}
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
@@ -349,6 +360,7 @@ const AdminSystemLogs = () => {
                         handleCopyStackTrace={handleCopyStackTrace}
                         formatTimestamp={formatTimestamp}
                         getLevelBadgeClass={getLevelBadgeClass}
+                        panelRef={detailPanelRef}
                     />
                 )}
             </div>

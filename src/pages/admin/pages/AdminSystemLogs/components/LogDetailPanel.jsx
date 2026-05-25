@@ -6,10 +6,11 @@ const LogDetailPanel = ({
     copied, 
     handleCopyStackTrace,
     formatTimestamp,
-    getLevelBadgeClass
+    getLevelBadgeClass,
+    panelRef
 }) => {
     return (
-        <div className="w-full lg:w-96 shrink-0 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-fit sticky top-6">
+        <div ref={panelRef} className="w-full lg:w-96 shrink-0 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-fit sticky top-6">
             <div className="p-4 bg-primary text-white flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <span className="material-symbols-outlined text-lg">description</span>

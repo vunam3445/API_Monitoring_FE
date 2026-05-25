@@ -44,19 +44,8 @@ export const useAdminUsers = () => {
             if (response) {
                 const { content, page } = response;
                 
-                // Inject mock data for UI development of Usage and Billing Health
-                const enrichedContent = (content || []).map((user, index) => {
-                    let mockBillingStatus = 'PAID';
-                    if (user.planType !== 'FREE' && index % 4 === 0) mockBillingStatus = 'OVERDUE';
-                    else if (user.planType !== 'FREE' && index % 5 === 0) mockBillingStatus = 'TRIAL';
-                    
-                    return {
-                        ...user,
-                        billingStatus: mockBillingStatus
-                    };
-                });
-
-                setUsers(enrichedContent);
+                // Sử dụng dữ liệu thực tế từ API Backend trả về (bao gồm trường billingStatus nếu Backend bổ sung sau này)
+                setUsers(content || []);
                 setPagination(prev => ({
                     ...prev,
                     totalElements: page?.totalElements || 0,
