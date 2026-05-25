@@ -8,7 +8,7 @@ const Sidebar = () => {
         { name: 'Dashboard', icon: 'dashboard', path: '/dashboard' },
         { name: 'API List', icon: 'language', path: '/apis' },
         { name: 'Monitoring', icon: 'insights', path: '/monitoring' },
-        { name: 'Alerts', icon: 'notifications_active', badge: 12, path: '/alerts' },
+        { name: 'Alerts', icon: 'notifications_active', path: '/alerts' },
         { name: 'Logs', icon: 'list_alt', path: '/logs' },
         { name: 'Billing', icon: 'payments', path: '/billing' },
     ];

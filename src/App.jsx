@@ -21,6 +21,7 @@ import AdminPricingPlans from './pages/admin/pages/AdminPricingPlans/AdminPricin
 import AdminRevenueAnalytics from './pages/admin/pages/AdminRevenueAnalytics/AdminRevenueAnalytics';
 import AdminSystemLogs from './pages/admin/pages/AdminSystemLogs/AdminSystemLogs';
 import AdminSettings from './pages/admin/pages/AdminSettings/AdminSettings';
+import AdminBroadcasts from './pages/admin/pages/AdminBroadcasts/AdminBroadcasts';
 import AdminRoute from './components/Auth/AdminRoute';
 
 // Global UI Providers
@@ -49,6 +50,7 @@ function App() {
                 <Route path="/admin/pricing-plans" element={<AdminPricingPlans />} />
 
                 <Route path="/admin/revenue-analytics" element={<AdminRevenueAnalytics />} />
+                <Route path="/admin/broadcasts" element={<AdminBroadcasts />} />
                 <Route path="/admin/system-logs" element={<AdminSystemLogs />} />
                 <Route path="/admin/settings" element={<AdminSettings />} />
               </Route>

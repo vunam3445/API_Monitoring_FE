@@ -51,6 +51,10 @@ const AdminSidebar = () => {
                     <span className="material-symbols-outlined">analytics</span>
                     <span>Revenue Analytics</span>
                 </NavLink>
+                <NavLink to="/admin/broadcasts" className={navItemClass}>
+                    <span className="material-symbols-outlined">campaign</span>
+                    <span>Broadcasts</span>
+                </NavLink>
                 <div className="pt-4 pb-2 px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">System</div>
                 <NavLink to="/admin/system-logs" className={navItemClass}>
                     <span className="material-symbols-outlined">terminal</span>
