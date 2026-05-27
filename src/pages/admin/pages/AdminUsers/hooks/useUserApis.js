@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { adminUserService } from '../../../../../services/adminUserService';
 import { apiEndpointService } from '../../../../../services/apiEndpointService';
+import { adminMonitorService } from '../../../../../services/adminMonitorService';
 import { useToast } from '../../../../../components/UI/Toast';
 import { useConfirmDialog } from '../../../../../components/UI/ConfirmDialog/ConfirmDialog';
 
@@ -35,17 +36,19 @@ export const useUserApis = (userId) => {
         if (userId) fetchApis(0);
     }, [userId, fetchApis]);
 
-    const handleToggleActive = async (id) => {
+    const handleToggleActive = async (id, currentIsBlock) => {
+        // Cập nhật UI ngay lập tức (optimistic update) TRƯỚC khi gọi API
+        setApis(prev => prev.map(a => a.id === id ? { ...a, isBlock: !currentIsBlock } : a));
         try {
-            const api = apis.find(a => a.id === id);
-            const currentStatus = api ? api.isActive : false;
-
-            await apiEndpointService.toggleActive(id);
-            toast.success(`Monitor ${!currentStatus ? 'activated' : 'paused'} successfully`);
-            fetchApis(pagination.page);
+            const isBlocked = await adminMonitorService.blockMonitor(id);
+            toast.success(`Monitor ${isBlocked ? 'đã khóa (LOCKED)' : 'đã mở khóa (UNLOCKED)'} thành công`);
+            // Cập nhật lại UI dựa trên kết quả trả về từ API
+            setApis(prev => prev.map(a => a.id === id ? { ...a, isBlock: isBlocked } : a));
         } catch (error) {
-            console.error('Failed to toggle active', error);
-            toast.error('Cập nhật trạng thái thất bại');
+            console.error('Failed to toggle monitor admin lock status:', error);
+            toast.error(error.response?.data?.message || error.message || 'Không thể cập nhật trạng thái khóa monitor');
+            // Revert lại trạng thái cũ nếu API thất bại
+            setApis(prev => prev.map(a => a.id === id ? { ...a, isBlock: currentIsBlock } : a));
         }
     };
 

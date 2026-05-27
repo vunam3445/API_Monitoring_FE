@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { getStatusBadge, getPlanBadge, formatDate } from '../utils';
 import ApiDetailModal from '../../../../APIList/components/ApiDetailModal';
 import AlertDetailModal from '../../../../Alerts/components/AlertDetailModal';
@@ -45,7 +46,7 @@ const UserApisTab = ({ userId }) => {
                         <tr>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">API Name</th>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Method & Endpoint</th>
-                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Active</th>
+                            <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Block</th>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-center">Status</th>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider">Latency</th>
                             <th className="px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider text-right">Actions</th>
@@ -77,11 +78,15 @@ const UserApisTab = ({ userId }) => {
                                         <button
                                             type="button"
                                             role="switch"
-                                            onClick={() => handleToggleActive(api.id)}
-                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 ${api.isActive ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-600'}`}
-                                            title={api.isActive ? 'Tạm dừng monitor' : 'Kích hoạt monitor'}
+                                            aria-checked={api.isBlock}
+                                            onClick={() => handleToggleActive(api.id, api.isBlock)}
+                                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-500/50 ${api.isBlock ? 'bg-red-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                                            title={api.isBlock ? 'Mở khóa Monitor' : 'Khóa Monitor (Bắt buộc dừng)'}
                                         >
-                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${api.isActive ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                            <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${api.isBlock ? 'translate-x-[18px]' : 'translate-x-[3px]'}`} />
+                                            {api.isBlock && (
+                                                <span className="material-symbols-outlined absolute text-[10px] text-white top-1/2 left-[5px] -translate-y-1/2">lock</span>
+                                            )}
                                         </button>
                                     </td>
                                     <td className="px-6 py-4 text-center">
@@ -352,6 +357,19 @@ const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleAct
         handleManualRenewal
     } = useUserDetails(selectedUser, setSelectedUser);
 
+    const navigate = useNavigate();
+
+    const handleSendNotification = () => {
+        if (selectedUser?.email) {
+            navigate('/admin/broadcasts', {
+                state: {
+                    targetType: 'SINGLE',
+                    email: selectedUser.email
+                }
+            });
+        }
+    };
+
     if (!selectedUser) return null;
 
     return (
@@ -366,6 +384,13 @@ const UserDetails = ({ selectedUser, setSelectedUser, handleBlockUser, handleAct
                     Quay lại danh sách
                 </button>
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={handleSendNotification}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-orange-50 hover:bg-orange-100 dark:bg-orange-900/20 dark:hover:bg-orange-900/40 border border-orange-200 dark:border-orange-900/50 text-orange-600 rounded-xl font-bold text-sm transition-all shadow-sm"
+                    >
+                        <span className="material-symbols-outlined text-[18px]">campaign</span>
+                        Gửi thông báo
+                    </button>
                     {selectedUser.status === 'ACTIVE' ? (
                         <button
                             onClick={() => { handleBlockUser(selectedUser.id); setSelectedUser(null); }}

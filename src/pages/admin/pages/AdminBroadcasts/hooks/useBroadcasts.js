@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { adminBroadcastService } from '../../../../../services/adminBroadcastService';
 import { useToast } from '../../../../../components/UI/Toast/ToastContext';
 import { subscriptionPlanService } from '../../../../../services/subscriptionPlanService';
@@ -23,6 +24,22 @@ export const useBroadcasts = () => {
     const [errors, setErrors] = useState({});
     
     const toast = useToast();
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    // Autofill khi được điều hướng từ chi tiết user
+    useEffect(() => {
+        if (location.state && location.state.targetType === 'SINGLE' && location.state.email) {
+            setFormData(prev => ({
+                ...prev,
+                targetType: 'SINGLE',
+                targetValue: location.state.email
+            }));
+            
+            // Xóa state trong history để tránh tự động điền lại khi reload
+            navigate(location.pathname, { replace: true, state: null });
+        }
+    }, [location.state, navigate, location.pathname]);
 
     // Tải danh sách gói cước động từ API
     const fetchPlans = useCallback(async () => {
