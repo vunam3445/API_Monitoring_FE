@@ -33,7 +33,7 @@ const Settings = () => {
             toast.success('Cài đặt đã được cập nhật thành công!');
         } catch (err) {
             let errorMessage = err.message || 'Lỗi khi cập nhật cài đặt';
-            
+
             // Nếu err.message là JSON string (do apiClient stringify)
             try {
                 if (typeof errorMessage === 'string' && errorMessage.startsWith('{')) {
@@ -86,36 +86,36 @@ const Settings = () => {
 
             <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
                 <AccountSection />
-                
-                <NotificationSection 
-                    data={formData} 
-                    onChange={handleFieldChange} 
-                />
-                
-                <AlertRulesSection 
-                    data={formData} 
+
+                <NotificationSection
+                    data={formData}
                     onChange={handleFieldChange}
                 />
-                
-                <MonitoringSection 
-                    data={formData} 
+
+                <AlertRulesSection
+                    data={formData}
                     onChange={handleFieldChange}
                 />
-                
-                <APIHealthSection 
-                    data={formData} 
+
+                <MonitoringSection
+                    data={formData}
+                    onChange={handleFieldChange}
+                />
+
+                <APIHealthSection
+                    data={formData}
                     onChange={handleFieldChange}
                 />
             </div>
 
             <div className="max-w-5xl mx-auto flex justify-end gap-3 pb-8">
-                <button 
+                <button
                     onClick={() => setFormData(settings)}
                     disabled={isUpdating}
                     className="px-6 py-2.5 text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
                     Cancel
                 </button>
-                <button 
+                <button
                     onClick={handleSaveChanges}
                     disabled={isUpdating}
                     className="px-8 py-2.5 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-all shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">

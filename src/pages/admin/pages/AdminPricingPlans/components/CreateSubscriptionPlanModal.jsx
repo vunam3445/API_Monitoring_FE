@@ -1,82 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-
-const FEATURE_CATEGORIES = {
-    CORE: { label: 'Giới hạn', icon: 'settings_input_component' },
-    NOTIFICATIONS: { label: 'Thông báo & Cảnh báo', icon: 'notifications_active' },
-    ANALYTICS: { label: 'Phân tích & Nhật ký', icon: 'analytics' },
-    SECURITY: { label: 'Xác thực & Bảo mật', icon: 'verified_user' },
-};
-
-const AVAILABLE_FEATURES = [
-    // --- CORE ---
-    {
-        key: '5_api_endpoints',
-        category: 'CORE',
-        label: '5 API Endpoints',
-        description: 'Giới hạn tối đa 5 địa chỉ API được theo dõi đồng thời.'
-    },
-    {
-        key: '50_api_endpoints',
-        category: 'CORE',
-        label: '50 API Endpoints',
-        description: 'Mở rộng khả năng giám sát lên đến 50 API.'
-    },
-    {
-        key: '500_api_endpoints',
-        category: 'CORE',
-        label: 'Unlimited API Endpoints',
-        description: 'Không giới hạn số lượng API theo dõi.'
-    },
-
-
-    // --- NOTIFICATIONS ---
-    {
-        key: 'email_notifications',
-        category: 'NOTIFICATIONS',
-        label: 'Email Notifications',
-        description: 'Gửi thông báo lỗi trực tiếp vào hòm thư cá nhân.'
-    },
-    {
-        key: 'slack_notifications',
-        category: 'NOTIFICATIONS',
-        label: 'Slack & Webhook Support',
-        description: 'Tích hợp thông báo vào Slack hoặc gửi dữ liệu lỗi đến URL tùy chỉnh.'
-    },
-    {
-        key: 'real_time_alerts',
-        category: 'NOTIFICATIONS',
-        label: 'Advanced Alert Rules',
-        description: 'Thiết lập điều kiện báo động thông minh (Timeout, Error Rate).'
-    },
-
-    // --- ANALYTICS ---
-    {
-        key: 'advanced_analytics',
-        category: 'ANALYTICS',
-        label: '24h Performance Charts',
-        description: 'Biểu đồ trực quan hóa dữ liệu hiệu năng trong 24 giờ qua.'
-    },
-    {
-        key: 'log_retention_30d',
-        category: 'ANALYTICS',
-        label: '30-Day Log Retention',
-        description: 'Lưu trữ chi tiết nhật ký mọi lần kiểm tra trong 30 ngày.'
-    },
-    {
-        key: 'export_data',
-        category: 'ANALYTICS',
-        label: 'Export Logs (CSV/JSON)',
-        description: 'Trích xuất dữ liệu nhật ký ra định dạng CSV hoặc JSON.'
-    },
-
-    // --- SECURITY ---
-    {
-        key: 'api_response_validation',
-        category: 'SECURITY',
-        label: 'Deep Response Validation',
-        description: 'Xác thực sâu cấu trúc JSON và kiểu dữ liệu trong phản hồi.'
-    },
-];
+import { featureService } from '../../../../../services/featureService';
 const CURRENCY_OPTIONS = [
     { value: 'USD', label: 'USD ($)', symbol: '$' },
     { value: 'EUR', label: 'EUR (€)', symbol: '€' },
@@ -188,6 +111,7 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [activeStep, setActiveStep] = useState(0);
+    const [dynamicFeatures, setDynamicFeatures] = useState([]);
     const modalRef = useRef(null);
 
     const isEditMode = !!editPlan;
@@ -200,16 +124,27 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
 
     // Reset hoặc load dữ liệu khi modal mở
     useEffect(() => {
-        if (isOpen) {
-            if (editPlan) {
-                setFormData(planToFormData(editPlan));
-            } else {
-                setFormData(getInitialFormData());
+        const initData = async () => {
+            if (isOpen) {
+                try {
+                    // Tải danh sách tính năng động từ service
+                    const fetchedFeatures = await featureService.getAll();
+                    setDynamicFeatures(fetchedFeatures);
+                } catch (error) {
+                    console.error('Lỗi khi tải danh sách tính năng:', error);
+                }
+
+                if (editPlan) {
+                    setFormData(planToFormData(editPlan));
+                } else {
+                    setFormData(getInitialFormData());
+                }
+                setErrors({});
+                setActiveStep(0);
+                setIsSubmitting(false);
             }
-            setErrors({});
-            setActiveStep(0);
-            setIsSubmitting(false);
-        }
+        };
+        initData();
     }, [isOpen, editPlan]);
 
     // Đóng modal khi nhấn Escape
@@ -277,6 +212,14 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
 
         setIsSubmitting(true);
         try {
+            // Chỉ giữ lại các feature có giá trị là true (loại bỏ các key bằng false hoặc null/undefined)
+            const filteredFeatures = Object.keys(formData.features).reduce((acc, key) => {
+                if (formData.features[key] === true) {
+                    acc[key] = true;
+                }
+                return acc;
+            }, {});
+
             const payload = {
                 name: formData.name.trim(),
                 description: formData.description.trim() || null,
@@ -284,7 +227,7 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
                 currency: formData.currency,
                 maxMonitors: Number(formData.maxMonitors),
                 minInterval: Number(formData.minInterval),
-                features: JSON.stringify(formData.features),
+                features: JSON.stringify(filteredFeatures),
                 billingCycle: formData.billingCycle,
                 isActive: formData.isActive,
             };
@@ -422,52 +365,6 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
     );
 
     const renderStep1 = () => {
-        // Hàm render cho từng nhóm tính năng - Tận dụng lại logic để giảm lỗi
-        const renderFeatureGroup = (catKey) => {
-            const catInfo = FEATURE_CATEGORIES[catKey];
-            const catFeatures = AVAILABLE_FEATURES.filter((f) => f.category === catKey);
-            if (catFeatures.length === 0) return null;
-
-            return (
-                <div key={catKey} className="space-y-3">
-                    <div className="flex items-center gap-2 px-1 border-b border-slate-100 dark:border-slate-800 pb-2">
-                        <span className="material-symbols-outlined text-slate-400 text-sm">{catInfo.icon}</span>
-                        <h4 className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{catInfo.label}</h4>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {catFeatures.map((feature) => {
-                            const isChecked = !!(formData.features && formData.features[feature.key]);
-                            return (
-                                <button
-                                    key={feature.key}
-                                    type="button"
-                                    onClick={() => handleFeatureToggle(feature.key)}
-                                    className={`flex items-start gap-3 p-3 rounded-xl transition-all border text-left ${isChecked
-                                        ? 'bg-primary/5 border-primary/30 dark:bg-primary/10 ring-1 ring-primary/20'
-                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                                        }`}
-                                >
-                                    <div className="mt-0.5 shrink-0">
-                                        <span className={`material-symbols-outlined text-lg transition-colors ${isChecked ? 'text-primary' : 'text-slate-300'}`}>
-                                            {isChecked ? 'check_circle' : 'radio_button_unchecked'}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className={`text-sm font-bold truncate ${isChecked ? 'text-primary' : 'text-slate-700 dark:text-slate-200'}`}>
-                                            {feature.label}
-                                        </p>
-                                        <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
-                                            {feature.description}
-                                        </p>
-                                    </div>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-            );
-        };
-
         return (
             <div className="space-y-6 animate-fadeIn pb-4">
                 {/* Section Giới hạn */}
@@ -504,25 +401,57 @@ const CreateSubscriptionPlanModal = ({ isOpen, onClose, onSubmit, editPlan = nul
                     </div>
                 </div>
 
-                {/* Danh sách Features */}
-                <div className="space-y-8">
-                    <div className="flex items-center justify-between">
+                {/* Danh sách Features dạng phẳng động */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                         <label className="text-[11px] font-black uppercase text-slate-400 tracking-widest">Tính năng đi kèm</label>
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">{selectedFeaturesCount} Key được cấp</span>
+                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">{selectedFeaturesCount} Tính năng được chọn</span>
                     </div>
 
-                    {/* Render từng nhóm theo thứ tự ưu tiên */}
-                    {renderFeatureGroup('CORE')}
-                    {renderFeatureGroup('NOTIFICATIONS')}
-                    {renderFeatureGroup('ANALYTICS')}
-                    {renderFeatureGroup('SECURITY')}
+                    {dynamicFeatures.length === 0 ? (
+                        <div className="text-center py-6 text-slate-400 text-xs">
+                            <span className="material-symbols-outlined text-lg mb-1 block">extension_off</span>
+                            Chưa có tính năng nào khả dụng trong hệ thống.
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1 custom-scrollbar">
+                            {dynamicFeatures.map((feature) => {
+                                const isChecked = !!(formData.features && formData.features[feature.key]);
+                                return (
+                                    <button
+                                        key={feature.key}
+                                        type="button"
+                                        onClick={() => handleFeatureToggle(feature.key)}
+                                        className={`flex items-start gap-3 p-3 rounded-xl transition-all border text-left ${isChecked
+                                            ? 'bg-primary/5 border-primary/30 dark:bg-primary/10 ring-1 ring-primary/20'
+                                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                                            }`}
+                                    >
+                                        <div className="mt-0.5 shrink-0">
+                                            <span className={`material-symbols-outlined text-lg transition-colors ${isChecked ? 'text-primary' : 'text-slate-300'}`}>
+                                                {isChecked ? 'check_circle' : 'radio_button_unchecked'}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className={`text-xs font-bold truncate ${isChecked ? 'text-primary' : 'text-slate-700 dark:text-slate-200'}`}>
+                                                {feature.label}
+                                            </p>
+                                            <p className="text-[10px] text-slate-500 line-clamp-2 mt-0.5 leading-relaxed">
+                                                {feature.description}
+                                            </p>
+                                        </div>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
         );
     };
 
     const renderStep2 = () => {
-        const selectedFeatures = AVAILABLE_FEATURES.filter((f) => formData.features[f.key]);
+        const selectedFeatures = dynamicFeatures.filter((f) => formData.features[f.key]);
         const intervalLabel = INTERVAL_OPTIONS.find((i) => i.value === Number(formData.minInterval))?.label || `${formData.minInterval}s`;
         return (
             <div className="space-y-5 animate-fadeIn">

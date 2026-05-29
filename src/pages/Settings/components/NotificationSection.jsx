@@ -1,5 +1,15 @@
 import React from 'react';
 
+const Tooltip = ({ text }) => (
+    <div className="group relative inline-flex items-center ml-1.5">
+        <span className="material-symbols-outlined text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-[15px] cursor-help leading-none select-none">help</span>
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-52 p-2 bg-slate-950/95 dark:bg-slate-800/95 backdrop-blur-sm border border-slate-700/50 dark:border-slate-600/30 text-white text-[10.5px] rounded-lg shadow-lg z-50 pointer-events-none transition-all font-normal normal-case leading-normal tracking-wide text-center">
+            {text}
+            <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-950/95 dark:border-t-slate-800/95"></div>
+        </div>
+    </div>
+);
+
 const NotificationSection = ({ data, onChange }) => {
     if (!data) return null;
 
@@ -15,6 +25,7 @@ const NotificationSection = ({ data, onChange }) => {
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-[18px] text-slate-400">mail</span>
                             <span className="text-sm font-semibold">Email Alerts</span>
+                            <Tooltip text="Nhận email cảnh báo tức thời khi phát hiện sự cố hệ thống. Bạn có thể thay đổi email nhận cảnh báo bên dưới." />
                         </div>
                         <input
                             checked={data.emailAlertsEnabled || false}
@@ -35,6 +46,7 @@ const NotificationSection = ({ data, onChange }) => {
                         <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-[18px] text-slate-400">forum</span>
                             <span className="text-sm font-semibold">Slack Webhook</span>
+                            <Tooltip text="Tích hợp gửi tin nhắn thông báo tự động đến kênh Slack của doanh nghiệp thông qua webhook URL." />
                         </div>
                         <input
                             checked={data.slackEnabled || false}

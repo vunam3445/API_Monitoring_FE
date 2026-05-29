@@ -47,6 +47,10 @@ const AdminSidebar = () => {
                     <span className="material-symbols-outlined">payments</span>
                     <span>Pricing Plans</span>
                 </NavLink>
+                <NavLink to="/admin/features" className={navItemClass}>
+                    <span className="material-symbols-outlined">extension</span>
+                    <span>Features</span>
+                </NavLink>
                 <NavLink to="/admin/revenue-analytics" className={navItemClass}>
                     <span className="material-symbols-outlined">analytics</span>
                     <span>Revenue Analytics</span>
